@@ -12,7 +12,7 @@ double k_per(const vec x, const vec y, const double l, const double s, const int
 
 
 // [[Rcpp::export]]
-mat rcpp_k_per(const mat &M, const mat &N, const double &l, const double &s, const int &p, bool equal_matrices) {
+mat rcpp_k_per(const mat M, const mat N, const double l, const double s, const int p, bool equal_matrices) {
   // Rcout << "I am running.\n"; // progress message
   mat K;
 

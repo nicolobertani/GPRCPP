@@ -10,7 +10,7 @@ double k_se_diff(double df, const double l, const double s) {
 }
 
 // [[Rcpp::export]]
-mat rcpp_k_se_diff(const mat &A, const double &l, const double &s, bool symmetric) {
+mat rcpp_k_se_diff(const mat A, const double l, const double s, bool symmetric) {
 
   mat K(A.n_rows, A.n_cols, fill::zeros);
   if (symmetric) {
