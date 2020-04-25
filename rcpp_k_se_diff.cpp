@@ -15,7 +15,7 @@ mat rcpp_k_se_diff(const mat &A, const double &l, const double &s, bool symmetri
   mat K(A.n_rows, A.n_cols, fill::zeros);
   if (symmetric) {
 
-    Rcout << "I am executing TRUE." << "\n";
+    // Rcout << "I am executing TRUE." << "\n"; // progress message
     // fill upper triangular wo diag
     for (int r = 0; r < A.n_rows; r++) {
       for (int c = r + 1; c < A.n_cols; c++) {
@@ -31,14 +31,13 @@ mat rcpp_k_se_diff(const mat &A, const double &l, const double &s, bool symmetri
 
   } else {
 
-    Rcout << "I am executing FALSE." << "\n";
+    // Rcout << "I am executing FALSE." << "\n"; // progress message
     for (int r = 0; r < A.n_rows; r++) {
       for (int c = 0; c < A.n_cols; c++) {
-        Rcout << r + c << "\n";
         K(r,c) = k_se_diff(A(r,c), l, s);
       }
     }
   }
-  Rcout << "I ACTUALLY GOT TO THE END!\n";
+  // Rcout << "I ACTUALLY GOT TO THE END!\n"; // progress message
   return K;
 }

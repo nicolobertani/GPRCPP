@@ -10,14 +10,13 @@ double entry_diff (const vec x, const vec y) {
 }
 
 // [[Rcpp::export]]
-mat rcpp_diff_mx(const mat &M, const mat &N, const bool equal_matrices) {
-  Rcout << "I am running.\n";
+mat rcpp_diff_sq_mx(const mat &M, const mat &N, const bool equal_matrices) {
+  // Rcout << "I am running.\n"; // progress message
   mat D;
-  colvec t, s;
 
   if (equal_matrices == 1) {
 
-    Rcout << "Matrices are equal.\n";
+    // Rcout << "Matrices are equal.\n"; // progress message
     D.set_size(M.n_rows, M.n_rows);
     D.fill(0);
     // fill upper triangular wo diag
@@ -30,7 +29,7 @@ mat rcpp_diff_mx(const mat &M, const mat &N, const bool equal_matrices) {
 
   } else {
 
-    Rcout << "Matrices are NOT equal.\n";
+    // Rcout << "Matrices are NOT equal.\n"; // progress message
     D.set_size(M.n_rows, N.n_rows);
     // fill everything
     for (int r = 0; r < M.n_rows; r++) {
@@ -39,6 +38,6 @@ mat rcpp_diff_mx(const mat &M, const mat &N, const bool equal_matrices) {
       }
     }
   }
-  Rcout << "Ok, I got to the end.\n";
+  // Rcout << "Ok, I got to the end.\n"; // progress message
   return D;
 }
