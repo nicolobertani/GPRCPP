@@ -15,7 +15,6 @@ source("GP functions - 20200417.R")
 
 X <- matrix(rnorm(2000), ncol = 2)
 
-
 all.equal(
   k.se(X),
   rcpp_k_se_diff(rcpp_diff_sq_mx(X, as.matrix(0), T), 1, 1, T)
@@ -53,6 +52,14 @@ system.time(
 )
 
 Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_k_se.cpp")
+
+X <- matrix(rnorm(20), ncol = 2)
+all.equal(
+  k.se(X),
+  rcpp_k_se(X, as.matrix(1), 1, 1, T)
+)
+
+
 all.equal(
   rcpp_k_se(as.matrix(c(1,2, 4)), as.matrix(0), 1, 1, T),
   rcpp_k_se_diff(rcpp_diff_sq_mx(as.matrix(c(1,2, 4)), as.matrix(0), T), 1, 1, T)

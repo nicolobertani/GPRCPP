@@ -4,14 +4,15 @@
 using namespace Rcpp;
 using namespace arma;
 
-double k_lin(const vec x, const vec y, const double l, const double s) {
-  double res = std::pow(s, 2) * dot(x - l, y - l);
+double d_k_per_l(const vec x, const vec y, const double l, const double s, const int p) {
+  double df = norm(x - y, 2);
+  double res = std::pow(s, 2) * exp(- 2 * std::pow(sin(datum::pi * df / p), 2) / std::pow(l, 2)) * 4 * std::pow(sin(datum::pi * df / p), 2) / std::pow(l, 3);
   return res;
 }
 
 
 // [[Rcpp::export]]
-mat rcpp_k_lin(const mat M, const mat N, const double l, const double s, const bool equal_matrices) {
+mat rcpp_d_k_per_l(const mat M, const mat N, const double l, const double s, const int p, bool equal_matrices) {
   // Rcout << "I am running.\n"; // progress message
   mat K;
 
@@ -23,14 +24,14 @@ mat rcpp_k_lin(const mat M, const mat N, const double l, const double s, const b
     // fill upper triangular wo diag
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = r + 1; c < M.n_rows; c++) {
-        K(r, c) = k_lin(M.row(r).t(), M.row(c).t(), l, s);
+        K(r, c) = d_k_per_l(M.row(r).t(), M.row(c).t(), l, s, p);
       }
     }
     K = K + K.t();
     // fill diag
-    for (int i = 0; i < M.n_rows; i++) {
-      K(i,i) = k_lin(M.row(i).t(), M.row(i).t(), l, s);
-    }
+    /*for (int i = 0; i < M.n_rows; i++) {
+      K(i,i) = d_k_per_l(M.row(i).t(), M.row(i).t(), l, s, p);
+    }*/
 
   } else {
 
@@ -39,7 +40,7 @@ mat rcpp_k_lin(const mat M, const mat N, const double l, const double s, const b
     // fill everything
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = 0; c < N.n_rows; c++) {
-        K(r, c) = k_lin(M.row(r).t(), N.row(c).t(), l, s);
+        K(r, c) = d_k_per_l(M.row(r).t(), N.row(c).t(), l, s, p);
       }
     }
   }

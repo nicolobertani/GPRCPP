@@ -18,7 +18,7 @@ mat rcpp_diff_2norm_mx(const mat M, const mat N, const bool equal_matrices) {
 
     // Rcout << "Matrices are equal.\n"; // progress message
     D.set_size(M.n_rows, M.n_rows);
-    D.fill(0);
+    D.zeros();
     // fill upper triangular wo diag
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = r + 1; c < M.n_rows; c++) {

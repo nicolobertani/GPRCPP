@@ -20,6 +20,7 @@ mat rcpp_k_se(const mat M, const mat N, const double l, const double s, const bo
 
     // Rcout << "Matrices are equal.\n"; // progress message
     K.set_size(M.n_rows, M.n_rows);
+    K.zeros();
     // fill upper triangular wo diag
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = r + 1; c < M.n_rows; c++) {
