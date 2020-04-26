@@ -14,144 +14,11 @@ Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_per_l.cpp")
 Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_per_s.cpp")
 
 
-d.k.per.l <- function(X1, X2 = NULL, l = 1, s = 1, p = 1) {
-  k <- function(x, y) {
-    s ^ 2 * exp(- 2 * sin(pi * norm(x - y, "2") / p) ^ 2 / (l ^ 2)) * (4 * sin(pi * norm(x - y, "2") / p) ^ 2) / (l ^ 3)   # changed here
-  }
-  x1 <- as.matrix(X1)
-  if (!length(X2)) {
-    output <- matrix(0, nrow = nrow(x1), ncol = nrow(x1))
-    sapply(seq(nrow(x1)), function(i) {
-      sapply(seq(nrow(x1))[seq(nrow(x1)) > i], function(j) {
-        output[i, j] <<- k(x1[i, ], x1[j, ]) 
-      })})
-    output <- output + t(output)
-    diag(output) <- 0 # changed here
-  } else {
-    x2 <- as.matrix(X2)
-    combs <- expand.grid(seq(nrow(x1)), seq(nrow(x2)))
-    output <- mapply(function(i, j) {
-      k(x1[i, ], x2[j, ]) 
-    }, i = combs[, 1], j = combs[, 2])
-    output <- matrix(output, nrow = nrow(x1))
-  }
-  return(output)
-}
-# sum(k.per(X.m, l = 2 + 1e-6, s = 4) - k.per(X.m, l = 2 - 1e-6, s = 4)) / 2e-6
-# sum(d.k.per.l(X.m, l = 2, s = 4))
-# sum(k.per(X.m, X.n, l = 2 + 1e-6) - k.per(X.m, X.n, l = 2 - 1e-6)) / 2e-6
-# sum(d.k.per.l(X.m, X.n, l = 2))
-
-d.k.per.s <- function(X1, X2 = NULL, l = 1, s = 1, p = 1) {
-  k <- function(x, y) {
-    2 * s * exp(- 2 * sin(pi * norm(x - y, "2") / p) ^ 2 / (l ^ 2))  # changed here
-  }
-  x1 <- as.matrix(X1)
-  if (!length(X2)) {
-    output <- matrix(0, nrow = nrow(x1), ncol = nrow(x1))
-    sapply(seq(nrow(x1)), function(i) {
-      sapply(seq(nrow(x1))[seq(nrow(x1)) > i], function(j) {
-        output[i, j] <<- k(x1[i, ], x1[j, ]) 
-      })})
-    output <- output + t(output)
-    diag(output) <- 2 * s # changed here
-  } else {
-    x2 <- as.matrix(X2)
-    combs <- expand.grid(seq(nrow(x1)), seq(nrow(x2)))
-    output <- mapply(function(i, j) {
-      k(x1[i, ], x2[j, ]) 
-    }, i = combs[, 1], j = combs[, 2])
-    output <- matrix(output, nrow = nrow(x1))
-  }
-  return(output)
-}
-# sum(k.per(X.m, s = 8 + 1e-6) - k.per(X.m, s = 8 - 1e-6)) / 2e-6
-# sum(d.k.per.s(X.m, s = 8))
-# sum(k.per(X.m, X.n, s = 8 + 1e-6) - k.per(X.m, X.n, s = 8 - 1e-6)) / 2e-6
-# sum(d.k.per.s(X.m, X.n, s = 8))
-
-
 # Linear - Function and derivatives -----------------------------------
 
-k.lin <- function(X1, X2 = NULL, l = 1, s = 1) {
-  k <- function(x, y) {
-    s ^ 2 * t(x - l) %*% (y - l)
-  }
-  x1 <- as.matrix(X1)
-  if (!length(X2)) {
-    output <- matrix(0, nrow = nrow(x1), ncol = nrow(x1))
-    sapply(seq(nrow(x1)), function(i) {
-      sapply(seq(nrow(x1))[seq(nrow(x1)) > i], function(j) {
-        output[i, j] <<- k(x1[i, ], x1[j, ]) 
-      })})
-    output <- output + t(output)
-    diag(output) <- sapply(seq(nrow(x1)), function(j) {k(x1[j, ], x1[j, ])})
-  } else {
-    x2 <- as.matrix(X2)
-    combs <- expand.grid(seq(nrow(x1)), seq(nrow(x2)))
-    output <- mapply(function(i, j) {
-      k(x1[i, ], x2[j, ]) 
-    }, i = combs[, 1], j = combs[, 2])
-    output <- matrix(output, nrow = nrow(x1))
-  }
-  return(output)
-}
-
-d.k.lin.l <- function(X1, X2 = NULL, l = 1, s = 1) {
-  k <- function(x, y) {
-    - s ^ 2 * (sum(x - l) + sum(y - l))   # changed here
-  }
-  x1 <- as.matrix(X1)
-  if (!length(X2)) {
-    output <- matrix(0, nrow = nrow(x1), ncol = nrow(x1))
-    sapply(seq(nrow(x1)), function(i) {
-      sapply(seq(nrow(x1))[seq(nrow(x1)) > i], function(j) {
-        output[i, j] <<- k(x1[i, ], x1[j, ]) 
-      })})
-    output <- output + t(output)
-    diag(output) <- sapply(seq(nrow(x1)), function(j) {k(x1[j, ], x1[j, ])}) # changed here
-  } else {
-    x2 <- as.matrix(X2)
-    combs <- expand.grid(seq(nrow(x1)), seq(nrow(x2)))
-    output <- mapply(function(i, j) {
-      k(x1[i, ], x2[j, ]) 
-    }, i = combs[, 1], j = combs[, 2])
-    output <- matrix(output, nrow = nrow(x1))
-  }
-  return(output)
-}
-# sum(k.lin(X.m, l = -8 + 1e-6) - k.lin(X.m, l = -8 - 1e-6)) / 2e-6
-# sum(d.k.lin.l(X.m, l = -8))
-# sum(k.lin(X.m, X.n, l = -8 + 1e-6) - k.lin(X.m, X.n, l = -8 - 1e-6)) / 2e-6
-# sum(d.k.lin.l(X.m, X.n, l = -8))
-
-d.k.lin.s <- function(X1, X2 = NULL, l = 1, s = 1) {
-  k <- function(x, y) {
-    2 * s * t(x - l) %*% (y - l)  # changed here
-  }
-  x1 <- as.matrix(X1)
-  if (!length(X2)) {
-    output <- matrix(0, nrow = nrow(x1), ncol = nrow(x1))
-    sapply(seq(nrow(x1)), function(i) {
-      sapply(seq(nrow(x1))[seq(nrow(x1)) > i], function(j) {
-        output[i, j] <<- k(x1[i, ], x1[j, ]) 
-      })})
-    output <- output + t(output)
-    diag(output) <- sapply(seq(nrow(x1)), function(j) {k(x1[j, ], x1[j, ])}) # changed here
-  } else {
-    x2 <- as.matrix(X2)
-    combs <- expand.grid(seq(nrow(x1)), seq(nrow(x2)))
-    output <- mapply(function(i, j) {
-      k(x1[i, ], x2[j, ]) 
-    }, i = combs[, 1], j = combs[, 2])
-    output <- matrix(output, nrow = nrow(x1))
-  }
-  return(output)
-}
-# sum(k.lin(X.m, s = 8 + 1e-6) - k.lin(X.m, s = 8 - 1e-6)) / 2e-6
-# sum(d.k.lin.s(X.m, s = 8))
-# sum(k.lin(X.m, X.n, s = 8 + 1e-6) - k.lin(X.m, X.n, s = 8 - 1e-6)) / 2e-6
-# sum(d.k.lin.s(X.m, X.n, s = 8))
+Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_k_lin.cpp")
+Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_lin_l.cpp")
+Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_lin_s.cpp")
 
 
 # Titsias 2009 - functions ------------------------------------------------
@@ -307,16 +174,10 @@ step.k.sigma.sq.svi <- function(sigma.sq.svi = 1) {
 
 # Hensman - SE+ ------------------------------------------------------------
 
-covariance.calls <- lapply(list(
-  K.mm = "k.se(X.m, l = l1, s = s1) + k.se(X.m, l = l2, s = s2) + diag(jitter.v, m.size)",
-  K.mn = "k.se(X.m, X.n, l = l1, s = s1) + k.se(X.m, X.n, l = l2, s = s2)",
-  K.nn = "k.se(X.n, l = l1, s = s1) + k.se(X.n, l = l2, s = s2)"
-), function(i) parse(text = i))
-
 step.k.se.l.svi <- function(X.m, X.n, relevant.l, relevant.s, sigma.sq.svi) {
-  d.K.mm <- d.k.se.l(X.m, l = relevant.l, s = relevant.s)
+  d.K.mm <- rcpp_d_k_se_l(X.m, X.m, relevant.l, relevant.s, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- d.k.se.l(X.m, X.n, l = relevant.l, s = relevant.s)
+  d.K.mn <- rcpp_d_k_se_l(X.m, X.n, relevant.l, relevant.s, F)
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
                        inv.K.mm %*% d.K.mn %*% t(K.mn) %*% inv.K.mm + 
@@ -330,9 +191,9 @@ step.k.se.l.svi <- function(X.m, X.n, relevant.l, relevant.s, sigma.sq.svi) {
 }
 
 step.k.se.s.svi <- function(X.m, X.n, relevant.l, relevant.s, sigma.sq.svi) {
-  d.K.mm <- d.k.se.s(X.m, l = relevant.l, s = relevant.s)
+  d.K.mm <- rcpp_d_k_se_s(X.m, X.m, relevant.l, relevant.s, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- d.k.se.s(X.m, X.n, l = relevant.l, s = relevant.s)
+  d.K.mn <- rcpp_d_k_se_s(X.m, X.n, relevant.l, relevant.s, F)
   tr.d.K.nn <- 2 * relevant.s * nrow(as.matrix(X.n)) # diag is constant
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
@@ -350,9 +211,9 @@ step.k.se.s.svi <- function(X.m, X.n, relevant.l, relevant.s, sigma.sq.svi) {
 # Hensman - Per+ -----------------------------------------------------------
 
 step.k.per.l.svi <- function(X.m, X.n, relevant.l, relevant.s, sigma.sq.svi, period) {
-  d.K.mm <- d.k.per.l(X.m, l = relevant.l, s = relevant.s, p = period)
+  d.K.mm <- rcpp_d_k_per_l(X.m, X.m, relevant.l, relevant.s, period, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- d.k.per.l(X.m, X.n, l = relevant.l, s = relevant.s, p = period)
+  d.K.mn <- rcpp_d_k_per_l(X.m, X.n, relevant.l, relevant.s, period, F)
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
                        inv.K.mm %*% d.K.mn %*% t(K.mn) %*% inv.K.mm + 
@@ -367,9 +228,9 @@ step.k.per.l.svi <- function(X.m, X.n, relevant.l, relevant.s, sigma.sq.svi, per
 }
 
 step.k.per.s.svi <- function(X.m, X.n, relevant.l, relevant.s, sigma.sq.svi, period) {
-  d.K.mm <- d.k.per.s(X.m, l = relevant.l, s = relevant.s, p = period)
+  d.K.mm <- rcpp_d_k_per_s(X.m, X.m, relevant.l, relevant.s, period, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- d.k.per.s(X.m, X.n, l = relevant.l, s = relevant.s, p = period)
+  d.K.mn <- rcpp_d_k_per_s(X.m, X.n, relevant.l, relevant.s, period, F)
   tr.d.K.nn <- 2 * relevant.s * nrow(as.matrix(X.n))
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
@@ -388,10 +249,10 @@ step.k.per.s.svi <- function(X.m, X.n, relevant.l, relevant.s, sigma.sq.svi, per
 # Hensman - Lin+ -----------------------------------------------------------
 
 step.k.lin.l.svi <- function(X.m, X.n, relevant.l, relevant.s, sigma.sq.svi) {
-  d.K.mm <- d.k.lin.l(X.m, l = relevant.l, s = relevant.s)
+  d.K.mm <- rcpp_d_k_lin_l(X.m, X.m, relevant.l, relevant.s, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- d.k.lin.l(X.m, X.n, l = relevant.l, s = relevant.s)
-  # tr.d.K.nn <- sum(diag(d.k.lin.l(X.n, l = relevant.l, s = relevant.s)))
+  d.K.mn <- rcpp_d_k_lin_l(X.m, X.n, relevant.l, relevant.s, F)
+  # tr.d.K.nn <- sum(diag(d.k.lin.l(X.n, X.n, relevant.l, relevant.s, T)))
   tr.d.K.nn <- sum(sapply(seq(nrow(as.matrix(X.n))), function(r) {- 2 * relevant.s ^ 2 * sum(X.n[r, ] - relevant.l)}))
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
@@ -407,10 +268,10 @@ step.k.lin.l.svi <- function(X.m, X.n, relevant.l, relevant.s, sigma.sq.svi) {
 }
 
 step.k.lin.s.svi <- function(X.m, X.n, relevant.l, relevant.s, sigma.sq.svi) {
-  d.K.mm <- d.k.lin.s(X.m, l = relevant.l, s = relevant.s)
+  d.K.mm <- rcpp_d_k_lin_s(X.m, X.m, relevant.l, relevant.s, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- d.k.lin.s(X.m, X.n, l = relevant.l, s = relevant.s)
-  # tr.d.K.nn <- sum(diag(d.k.lin.s(X.n, l = relevant.l, s = relevant.s)))
+  d.K.mn <- rcpp_d_k_lin_s(X.m, X.n, relevant.l, relevant.s, F)
+  # tr.d.K.nn <- sum(diag(rcpp_d_k_lin_s(X.n, X.n, relevant.l, relevant.s, T)))
   tr.d.K.nn <- sum(sapply(seq(nrow(as.matrix(X.n))), function(r) {2 * relevant.s * sum((X.n[r, ] - relevant.l) ^ 2)}))
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
@@ -430,9 +291,9 @@ step.k.lin.s.svi <- function(X.m, X.n, relevant.l, relevant.s, sigma.sq.svi) {
 
 step.k.sese.l.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1, 
                               relevant.l, relevant.s, relevant.m, sigma.sq.svi) {
-  d.K.mm <- d.k.se.l(X.m.1, l = relevant.l, s = relevant.s) * k.se(X.m.2, l = relevant.m)
+  d.K.mm <- rcpp_d_k_se_l(X.m.1, X.m.1, relevant.l, relevant.s, T) * rcpp_k_se(X.m.2, X.m.2, relevant.m, 1, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- d.k.se.l(X.m.1, X.n.1, l = relevant.l, s = relevant.s) * k.se(X.m.2, X.n.2, l = relevant.m)
+  d.K.mn <- rcpp_d_k_se_l(X.m.1, X.n.1, relevant.l, relevant.s, F) * rcpp_k_se(X.m.2, X.n.2, relevant.m, 1, F)
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
                        inv.K.mm %*% d.K.mn %*% t(K.mn) %*% inv.K.mm + 
@@ -448,10 +309,10 @@ step.k.sese.l.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1,
 
 step.k.sese.s.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1, 
                               relevant.l, relevant.s, relevant.m, sigma.sq.svi) {
-  d.K.mm <- d.k.se.s(X.m.1, l = relevant.l, s = relevant.s) * k.se(X.m.2, l = relevant.m)
+  d.K.mm <- rcpp_d_k_se_s(X.m.1, X.m.1, relevant.l, relevant.s, T) * rcpp_k_se(X.m.2, X.m.2, relevant.m, 1, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- d.k.se.s(X.m.1, X.n.1, l = relevant.l, s = relevant.s) * k.se(X.m.2, X.n.2, l = relevant.m)
-  # tr.d.K.nn <- sum(diag(d.k.se.s(X.n.1, l = relevant.l, s = relevant.s) * k.se(X.n.2, l = relevant.m)))
+  d.K.mn <- rcpp_d_k_se_s(X.m.1, X.n.1, relevant.l, relevant.s, F) * rcpp_k_se(X.m.2, X.n.2, relevant.m, 1, F)
+  # tr.d.K.nn <- sum(diag(rcpp_d_k_se_s(X.n.1, X.n.1, relevant.l, relevant.s, T) * rcpp_k_se(X.n.2, X.n.2, relevant.m, 1, T)))
   tr.d.K.nn <- 2 * relevant.s * nrow(as.matrix(X.n.1)) # diag is constant
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
@@ -468,9 +329,9 @@ step.k.sese.s.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1,
 
 step.k.sese.m.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1, 
                               relevant.l, relevant.s, relevant.m, sigma.sq.svi) {
-  d.K.mm <- k.se(X.m.1, l = relevant.l, s = relevant.s) * d.k.se.l(X.m.2, l = relevant.m)
+  d.K.mm <- rcpp_k_se(X.m.1, X.m.1, relevant.l, relevant.s, T) * rcpp_d_k_se_l(X.m.2, X.m.2, relevant.m, 1, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- k.se(X.m.1, X.n.1, l = relevant.l, s = relevant.s) * d.k.se.l(X.m.2, X.n.2, l = relevant.m)
+  d.K.mn <- rcpp_k_se(X.m.1, X.n.1, relevant.l, relevant.s, F) * rcpp_d_k_se_l(X.m.2, X.n.2, relevant.m, 1, F)
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
                        inv.K.mm %*% d.K.mn %*% t(K.mn) %*% inv.K.mm + 
@@ -489,9 +350,9 @@ step.k.sese.m.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1,
 
 step.k.PerSE.l.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1, 
                                relevant.l, relevant.s, relevant.m, sigma.sq.svi, period) {
-  d.K.mm <- d.k.per.l(X.m.1, l = relevant.l, s = relevant.s, p = period) * k.se(X.m.2, l = relevant.m)
+  d.K.mm <- rcpp_d_k_per_l(X.m.1, X.m.1, relevant.l, relevant.s, period, T) * rcpp_k_se(X.m.2, X.m.2, relevant.m, 1, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- d.k.per.l(X.m.1, X.n.1, l = relevant.l, s = relevant.s, p = period) * k.se(X.m.2, X.n.2, l = relevant.m)
+  d.K.mn <- rcpp_d_k_per_l(X.m.1, X.n.1, relevant.l, relevant.s, period, F) * rcpp_k_se(X.m.2, X.n.2, relevant.m, 1, F)
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
                        inv.K.mm %*% d.K.mn %*% t(K.mn) %*% inv.K.mm + 
@@ -507,10 +368,10 @@ step.k.PerSE.l.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1,
 
 step.k.PerSE.s.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1, 
                                relevant.l, relevant.s, relevant.m, sigma.sq.svi, period) {
-  d.K.mm <- d.k.per.s(X.m.1, l = relevant.l, s = relevant.s, p = period) * k.se(X.m.2, l = relevant.m)
+  d.K.mm <- rcpp_d_k_per_s(X.m.1, X.m.1, relevant.l, relevant.s, period, T) * rcpp_k_se(X.m.2, X.m.2, relevant.m, 1, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- d.k.per.s(X.m.1, X.n.1, l = relevant.l, s = relevant.s, p = period) * k.se(X.m.2, X.n.2, l = relevant.m)
-  # tr.d.K.nn <- sum(diag(d.k.per.s(X.n.1, l = relevant.l, s = relevant.s, p = period) * k.se(X.n.2, l = relevant.m)))
+  d.K.mn <- rcpp_d_k_per_s(X.m.1, X.n.1, relevant.l, relevant.s, period, F) * rcpp_k_se(X.m.2, X.n.2, relevant.m, 1, F)
+  # tr.d.K.nn <- sum(diag(rcpp_d_k_per_s(X.n.1, X.n.1, relevant.l, relevant.s, period, T) * rcpp_k_se(X.n.2, X.n.2, relevant.m, 1, T)))
   tr.d.K.nn <- 2 * relevant.s * nrow(as.matrix(X.n.1)) 
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
@@ -527,9 +388,9 @@ step.k.PerSE.s.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1,
 
 step.k.PerSE.m.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1, 
                                relevant.l, relevant.s, relevant.m, sigma.sq.svi, period) {
-  d.K.mm <- k.per(X.m.1, l = relevant.l, s = relevant.s, p = period) * d.k.se.l(X.m.2, l = relevant.m)
+  d.K.mm <- rcpp_k_per(X.m.1, X.m.1, relevant.l, relevant.s, period, T) * rcpp_d_k_se_l(X.m.2, X.m.2, relevant.m, 1, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- k.per(X.m.1, X.n.1, l = relevant.l, s = relevant.s, p = period) * d.k.se.l(X.m.2, X.n.2, l = relevant.m)
+  d.K.mn <- rcpp_k_per(X.m.1, X.n.1, relevant.l, relevant.s, period, F) * rcpp_d_k_se_l(X.m.2, X.n.2, relevant.m, 1, F)
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
                        inv.K.mm %*% d.K.mn %*% t(K.mn) %*% inv.K.mm + 
@@ -548,10 +409,10 @@ step.k.PerSE.m.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1,
 
 step.k.LinSE.l.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1, 
                                relevant.l, relevant.s, relevant.m, sigma.sq.svi) {
-  d.K.mm <- d.k.lin.l(X.m.1, l = relevant.l, s = relevant.s) * k.se(X.m.2, l = relevant.m)
+  d.K.mm <- rcpp_d_k_lin_l(X.m.1, X.m.1, relevant.l, relevant.s, T) * rcpp_k_se(X.m.2, X.m.2, relevant.m, 1, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- d.k.lin.l(X.m.1, X.n.1, l = relevant.l, s = relevant.s) * k.se(X.m.2, X.n.2, l = relevant.m)
-  # tr.d.K.nn <- sum(diag(d.k.lin.l(X.n.1, l = relevant.l, s = relevant.s) * k.se(X.n.2, l = relevant.m)))
+  d.K.mn <- rcpp_d_k_lin_l(X.m.1, X.n.1, relevant.l, relevant.s, F) * rcpp_k_se(X.m.2, X.n.2, relevant.m, 1, F)
+  # tr.d.K.nn <- sum(diag(rcpp_d_k_lin_l(X.n.1, X.n.1, relevant.l, relevant.s, T) * rcpp_k_se(X.n.2, X.n.2, relevant.m, 1, T)))
   tr.d.K.nn <- sum(sapply(seq(nrow(as.matrix(X.n.1))), function(r) {- 2 * relevant.s ^ 2 * sum(X.n.1[r, ] - relevant.l)}))
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
@@ -568,10 +429,10 @@ step.k.LinSE.l.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1,
 
 step.k.LinSE.s.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1,
                                relevant.l, relevant.s, relevant.m, sigma.sq.svi) {
-  d.K.mm <- d.k.lin.s(X.m.1, l = relevant.l, s = relevant.s) * k.se(X.m.2, l = relevant.m)
+  d.K.mm <- rcpp_d_k_lin_s(X.m.1, X.m.1, relevant.l, relevant.s, T) * rcpp_k_se(X.m.2, X.m.2, relevant.m, 1, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- d.k.lin.s(X.m.1, X.n.1, l = relevant.l, s = relevant.s) * k.se(X.m.2, X.n.2, l = relevant.m)
-  # tr.d.K.nn <- sum(diag(d.k.lin.s(X.n.1, l = relevant.l, s = relevant.s) * k.se(X.n.2, l = relevant.m)))
+  d.K.mn <- rcpp_d_k_lin_s(X.m.1, X.n.1, relevant.l, relevant.s, F) * rcpp_k_se(X.m.2, X.n.2, relevant.m, 1, F)
+  # tr.d.K.nn <- sum(diag(rcpp_d_k_lin_s(X.n.1, X.n.1, relevant.l, relevant.s, T) * rcpp_k_se(X.n.2, X.n.2, relevant.m, 1, T)))
   tr.d.K.nn <- sum(sapply(seq(nrow(as.matrix(X.n.1))), function(r) {2 * relevant.s * sum((X.n.1[r, ] - relevant.l) ^ 2)}))
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
@@ -588,9 +449,9 @@ step.k.LinSE.s.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1,
 
 step.k.LinSE.m.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1,
                                relevant.l, relevant.s, relevant.m, sigma.sq.svi) {
-  d.K.mm <- k.lin(X.m.1, l = relevant.l, s = relevant.s) * d.k.se.l(X.m.2, l = relevant.m)
+  d.K.mm <- rcpp_k_lin(X.m.1, X.m.1, relevant.l, relevant.s, T) * rcpp_d_k_se_l(X.m.2, X.m.2, relevant.m, 1, T)
   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-  d.K.mn <- k.lin(X.m.1, X.n.1, l = relevant.l, s = relevant.s) * d.k.se.l(X.m.2, X.n.2, l = relevant.m)
+  d.K.mn <- rcpp_k_lin(X.m.1, X.n.1, relevant.l, relevant.s, F) * rcpp_d_k_se_l(X.m.2, X.n.2, relevant.m, 1, F)
   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
                        inv.K.mm %*% d.K.mn %*% t(K.mn) %*% inv.K.mm + 
