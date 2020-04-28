@@ -2,6 +2,8 @@ library(RcppArmadillo)
 
 # SE - Function and derivatives ----------------------------------------------------
 
+Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_diff_sq_mx.cpp")
+Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_k_se_diff.cpp")
 Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_k_se.cpp")
 Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_se_l.cpp")
 Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_se_s.cpp")
@@ -9,6 +11,8 @@ Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_se_s.cpp")
 
 # Periodic - Function and derivatives -------------------------------------
 
+Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_diff_2norm_mx.cpp")
+Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_k_per_diff.cpp")
 Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_k_per.cpp")
 Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_per_l.cpp")
 Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_per_s.cpp")
