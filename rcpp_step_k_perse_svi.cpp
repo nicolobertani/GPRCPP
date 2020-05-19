@@ -4,19 +4,19 @@
 using namespace Rcpp;
 using namespace arma;
 
-double d_k_se_l(const vec &x, const vec &y, const double l, const double s) {
-  double df = std::pow(norm(x - y, 2), 2);
-  double res = std::pow(s, 2) * df / std::pow(l, 3) * exp(- df / (2 * std::pow(l, 2)));
+double d_k_per_l(const vec x, const vec y, const double l, const double s, const int p) {
+  double df = norm(x - y, 2);
+  double res = std::pow(s, 2) * exp(- 2 * std::pow(sin(datum::pi * df / p), 2) / std::pow(l, 2)) * 4 * std::pow(sin(datum::pi * df / p), 2) / std::pow(l, 3);
   return res;
 }
 
-double d_k_se_s(const vec &x, const vec &y, const double l, const double s) {
-  double df = std::pow(norm(x - y, 2), 2);
-  double res = 2 * s * exp(- df / (2 * std::pow(l, 2)));
+double d_k_per_s(const vec x, const vec y, const double l, const double s, const int p) {
+  double df = norm(x - y, 2);
+  double res = 2 * s * exp(- 2 * std::pow(sin(datum::pi * df / p), 2) / std::pow(l, 2));
   return res;
 }
 
-mat rcpp_d_k_se_l(const mat &M, const mat &N, const double l, const double s, const bool equal_matrices) {
+mat rcpp_d_k_per_l(const mat M, const mat N, const double l, const double s, const int p, bool equal_matrices) {
   // Rcout << "I am running.\n"; // progress message
   mat K;
 
@@ -28,10 +28,14 @@ mat rcpp_d_k_se_l(const mat &M, const mat &N, const double l, const double s, co
     // fill upper triangular wo diag
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = r + 1; c < M.n_rows; c++) {
-        K(r, c) = d_k_se_l(M.row(r).t(), M.row(c).t(), l, s);
+        K(r, c) = d_k_per_l(M.row(r).t(), M.row(c).t(), l, s, p);
       }
     }
     K = K + K.t();
+    // fill diag
+    /*for (int i = 0; i < M.n_rows; i++) {
+      K(i,i) = d_k_per_l(M.row(i).t(), M.row(i).t(), l, s, p);
+    }*/
 
   } else {
 
@@ -40,7 +44,7 @@ mat rcpp_d_k_se_l(const mat &M, const mat &N, const double l, const double s, co
     // fill everything
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = 0; c < N.n_rows; c++) {
-        K(r, c) = d_k_se_l(M.row(r).t(), N.row(c).t(), l, s);
+        K(r, c) = d_k_per_l(M.row(r).t(), N.row(c).t(), l, s, p);
       }
     }
   }
@@ -48,7 +52,7 @@ mat rcpp_d_k_se_l(const mat &M, const mat &N, const double l, const double s, co
   return K;
 }
 
-mat rcpp_d_k_se_s(const mat M, const mat N, const double l, const double s, const bool equal_matrices) {
+mat rcpp_d_k_per_s(const mat M, const mat N, const double l, const double s, const int p, bool equal_matrices) {
   // Rcout << "I am running.\n"; // progress message
   mat K;
 
@@ -60,7 +64,7 @@ mat rcpp_d_k_se_s(const mat M, const mat N, const double l, const double s, cons
     // fill upper triangular wo diag
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = r + 1; c < M.n_rows; c++) {
-        K(r, c) = d_k_se_s(M.row(r).t(), M.row(c).t(), l, s);
+        K(r, c) = d_k_per_s(M.row(r).t(), M.row(c).t(), l, s, p);
       }
     }
     K = K + K.t();
@@ -76,7 +80,7 @@ mat rcpp_d_k_se_s(const mat M, const mat N, const double l, const double s, cons
     // fill everything
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = 0; c < N.n_rows; c++) {
-        K(r, c) = d_k_se_s(M.row(r).t(), N.row(c).t(), l, s);
+        K(r, c) = d_k_per_s(M.row(r).t(), N.row(c).t(), l, s, p);
       }
     }
   }
@@ -95,8 +99,8 @@ mat d_sum_Lambda_fun(const mat &M1, const mat &M1D, const mat &M2, const mat &M2
 }
 
 // [[Rcpp::export]]
-double rcpp_step_k_se_svi(const mat &M, const mat &N,
-  const double l, const double s, const double sigma_sq,
+double rcpp_step_k_per_svi(const mat &M, const mat &N,
+  const double l, const double s, const double sigma_sq, const int p,
   const mat &inv_K_mm, const mat &K_mn, const vec &y, const vec &m, const mat &S, const int par_id) {
     // Rcout << "I am running.\n"; // progress message
     mat d_K_mm(M.n_rows, M.n_rows, fill::zeros);
@@ -111,17 +115,17 @@ double rcpp_step_k_se_svi(const mat &M, const mat &N,
 
     if (par_id == 1) {
 
-      d_K_mm = rcpp_d_k_se_l(M, N, l, s, 1);
-      d_K_mn = rcpp_d_k_se_l(M, N, l, s, 0);
+      d_K_mm = rcpp_d_k_per_l(M, N, l, s, p, 1);
+      d_K_mn = rcpp_d_k_per_l(M, N, l, s, p, 0);
       for (size_t i = 0; i < N.n_rows; i++) {
-        diag_d_K_nn(i) = d_k_se_l(N.row(i).t(), N.row(i).t(), l, s);
+        diag_d_K_nn(i) = d_k_per_l(N.row(i).t(), N.row(i).t(), l, s, p);
       }
     } else {
 
-      d_K_mm = rcpp_d_k_se_s(M, N, l, s, 1);
-      d_K_mn = rcpp_d_k_se_s(M, N, l, s, 0);
+      d_K_mm = rcpp_d_k_per_s(M, N, l, s, p, 1);
+      d_K_mn = rcpp_d_k_per_s(M, N, l, s, p, 0);
       for (size_t i = 0; i < N.n_rows; i++) {
-        diag_d_K_nn(i) = d_k_se_s(N.row(i).t(), N.row(i).t(), l, s);
+        diag_d_K_nn(i) = d_k_per_s(N.row(i).t(), N.row(i).t(), l, s, p);
       }
     }
 

@@ -4,7 +4,7 @@
 using namespace Rcpp;
 using namespace arma;
 
-double k_se(const vec x, const vec y, const double l, const double s) {
+double k_se(const vec &x, const vec &y, const double l, const double s) {
   double df = std::pow(norm(x - y, 2), 2);
   double res = std::pow(s, 2) * exp(- df / (2 * std::pow(l, 2)));
   return res;
@@ -12,7 +12,7 @@ double k_se(const vec x, const vec y, const double l, const double s) {
 
 
 // [[Rcpp::export]]
-mat rcpp_k_se(const mat M, const mat N, const double l, const double s, const bool equal_matrices) {
+mat rcpp_k_se(const mat &M, const mat &N, const double l, const double s, const bool equal_matrices) {
   // Rcout << "I am running.\n"; // progress message
   mat K;
 

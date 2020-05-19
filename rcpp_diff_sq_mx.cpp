@@ -10,7 +10,7 @@ double entry_diff (const vec x, const vec y) {
 }
 
 // [[Rcpp::export]]
-mat rcpp_diff_sq_mx(const mat M, const mat N, const bool equal_matrices) {
+mat rcpp_diff_sq_mx(const mat &M, const mat &N, const bool equal_matrices) {
   // Rcout << "I am running.\n"; // progress message
   mat D;
 

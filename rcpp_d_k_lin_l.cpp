@@ -4,14 +4,14 @@
 using namespace Rcpp;
 using namespace arma;
 
-double d_k_lin_l(const vec x, const vec y, const double l, const double s) {
+double d_k_lin_l(const vec &x, const vec &y, const double l, const double s) {
   double res = - std::pow(s, 2) * (sum(x - l) + sum(y - l));
   return res;
 }
 
 
 // [[Rcpp::export]]
-mat rcpp_d_k_lin_l(const mat M, const mat N, const double l, const double s, const bool equal_matrices) {
+mat rcpp_d_k_lin_l(const mat &M, const mat &N, const double l, const double s, const bool equal_matrices) {
   // Rcout << "I am running.\n"; // progress message
   mat K;
 

@@ -10,7 +10,7 @@ double k_per_diff(double df, const double l, const double s, const int p) {
 }
 
 // [[Rcpp::export]]
-mat rcpp_k_per_diff(const mat A, const double l, const double s, const int p, bool symmetric) {
+mat rcpp_k_per_diff(const mat &A, const double l, const double s, const int p, bool symmetric) {
 
   mat K(A.n_rows, A.n_cols, fill::zeros);
   if (symmetric) {

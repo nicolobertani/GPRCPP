@@ -4,12 +4,12 @@
 using namespace Rcpp;
 using namespace arma;
 
-double d_k_lin_l(const vec x, const vec y, const double l, const double s) {
+double d_k_lin_l(const vec &x, const vec &y, const double l, const double s) {
   double res = - std::pow(s, 2) * (sum(x - l) + sum(y - l));
   return res;
 }
 
-double d_k_lin_s(const vec x, const vec y, const double l, const double s) {
+double d_k_lin_s(const vec &x, const vec &y, const double l, const double s) {
   double res = 2 * s * dot(x - l, y - l);
   return res;
 }

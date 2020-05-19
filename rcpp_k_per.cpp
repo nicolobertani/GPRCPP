@@ -4,7 +4,7 @@
 using namespace Rcpp;
 using namespace arma;
 
-double k_per(const vec x, const vec y, const double l, const double s, const int p) {
+double k_per(const vec &x, const vec &y, const double l, const double s, const int p) {
   double df = norm(x - y, 2);
   double res = std::pow(s, 2) * exp(- 2 * std::pow(sin(datum::pi * df / p), 2) / std::pow(l, 2));
   return res;
@@ -12,7 +12,7 @@ double k_per(const vec x, const vec y, const double l, const double s, const int
 
 
 // [[Rcpp::export]]
-mat rcpp_k_per(const mat M, const mat N, const double l, const double s, const int p, bool equal_matrices) {
+mat rcpp_k_per(const mat &M, const mat &N, const double l, const double s, const int p, bool equal_matrices) {
   // Rcout << "I am running.\n"; // progress message
   mat K;
 
