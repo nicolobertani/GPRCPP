@@ -10,9 +10,9 @@ double k_per(const vec &x, const vec &y, const double l, const double s, const i
   return res;
 }
 
-double k_se(const vec &x, const vec &y, const double r, const double s) {
+double k_se(const vec &x, const vec &y, const double m) {
   double df = pow(norm(x - y, 2), 2);
-  double res = exp(- df / (2 * pow(r, 2)));
+  double res = exp(- df / (2 * pow(m, 2)));
   return res;
 }
 
@@ -52,7 +52,7 @@ mat rcpp_k_per(const mat &M, const mat &N, const double l, const double s, const
   return K;
 }
 
-mat rcpp_k_se(const mat &M, const mat &N, const double r, const bool equal_matrices) {
+mat rcpp_k_se(const mat &M, const mat &N, const double m, const bool equal_matrices) {
   // Rcout << "I am running.\n"; // progress message
   mat K;
 
@@ -64,13 +64,13 @@ mat rcpp_k_se(const mat &M, const mat &N, const double r, const bool equal_matri
     // fill upper triangular wo diag
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = r + 1; c < M.n_rows; c++) {
-        K(r, c) = k_se(M.row(r).t(), M.row(c).t(), r);
+        K(r, c) = k_se(M.row(r).t(), M.row(c).t(), m);
       }
     }
     K = K + K.t();
     // fill diag
     for (int i = 0; i < M.n_rows; i++) {
-      K(i,i) = k_se(M.row(i).t(), M.row(i).t(), r);
+      K(i,i) = k_se(M.row(i).t(), M.row(i).t(), m);
     }
 
   } else {
@@ -80,7 +80,7 @@ mat rcpp_k_se(const mat &M, const mat &N, const double r, const bool equal_matri
     // fill everything
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = 0; c < N.n_rows; c++) {
-        K(r, c) = k_se(M.row(r).t(), N.row(c).t(), r);
+        K(r, c) = k_se(M.row(r).t(), N.row(c).t(), m);
       }
     }
   }
@@ -90,10 +90,10 @@ mat rcpp_k_se(const mat &M, const mat &N, const double r, const bool equal_matri
 
 
 // [[Rcpp::export]]
-mat rcpp_k_perse(const mat &M, const mat &N, const mat &P, const mat &Q, const double l, const double s, const double r, const int p, const bool equal_matrices) {
+mat rcpp_k_perse(const mat &M, const mat &N, const mat &P, const mat &Q, const double l, const double s, const double m, const int p, const bool equal_matrices) {
   mat K_per, K_se, res;
   K_per = rcpp_k_per(M, N, l, s, p, equal_matrices);
-  K_se = rcpp_k_se(P, Q, r, equal_matrices);
+  K_se = rcpp_k_se(P, Q, m, equal_matrices);
   res = K_per % K_se;
   return res;
 }
