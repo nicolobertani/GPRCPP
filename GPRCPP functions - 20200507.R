@@ -245,65 +245,11 @@ Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_step_k_lin_svi.
 # }
 # 
 # 
-# # Hensman - PerxSE --------------------------------------------------------
-# 
-# step.k.PerSE.l.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1, 
-#                                relevant.l, relevant.s, relevant.m, sigma.sq.svi, period) {
-#   d.K.mm <- rcpp_d_k_per_l(X.m.1, X.m.1, relevant.l, relevant.s, period, T) * rcpp_k_se(X.m.2, X.m.2, relevant.m, 1, T)
-#   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-#   d.K.mn <- rcpp_d_k_per_l(X.m.1, X.n.1, relevant.l, relevant.s, period, F) * rcpp_k_se(X.m.2, X.n.2, relevant.m, 1, F)
-#   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
-#   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
-#                        inv.K.mm %*% d.K.mn %*% t(K.mn) %*% inv.K.mm + 
-#                        inv.K.mm %*% K.mn %*% t(d.K.mn) %*% inv.K.mm + 
-#                        inv.K.mm %*% K.mn %*% t(K.mn) %*% d.inv.K.mm) / sigma.sq.svi 
-#   
-#   output <- t(y.svi - t(K.mn) %*% (inv.K.mm %*% m.svi)) %*% (t(d.K.mn) %*% (inv.K.mm %*% m.svi) + t(K.mn) %*% (d.inv.K.mm %*% m.svi)) / sigma.sq.svi - 
-#     sum(diag(-d.Q.nn)) / (2 * sigma.sq.svi) - 
-#     sum(sapply(seq(m.size), function(j) {S.svi[j, ] %*% d.sum.Lambda_i[, j]})) / 2 + 
-#     (sum(diag((inv.K.mm %*% S.svi %*% inv.K.mm - inv.K.mm) %*% d.K.mm)) - t(m.svi) %*% d.inv.K.mm %*% m.svi) / 2 
-#   return(output)
-# }
-# 
-# step.k.PerSE.s.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1, 
-#                                relevant.l, relevant.s, relevant.m, sigma.sq.svi, period) {
-#   d.K.mm <- rcpp_d_k_per_s(X.m.1, X.m.1, relevant.l, relevant.s, period, T) * rcpp_k_se(X.m.2, X.m.2, relevant.m, 1, T)
-#   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-#   d.K.mn <- rcpp_d_k_per_s(X.m.1, X.n.1, relevant.l, relevant.s, period, F) * rcpp_k_se(X.m.2, X.n.2, relevant.m, 1, F)
-#   # tr.d.K.nn <- sum(diag(rcpp_d_k_per_s(X.n.1, X.n.1, relevant.l, relevant.s, period, T) * rcpp_k_se(X.n.2, X.n.2, relevant.m, 1, T)))
-#   tr.d.K.nn <- 2 * relevant.s * nrow(as.matrix(X.n.1)) 
-#   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
-#   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
-#                        inv.K.mm %*% d.K.mn %*% t(K.mn) %*% inv.K.mm + 
-#                        inv.K.mm %*% K.mn %*% t(d.K.mn) %*% inv.K.mm + 
-#                        inv.K.mm %*% K.mn %*% t(K.mn) %*% d.inv.K.mm) / sigma.sq.svi 
-#   
-#   output <- t(y.svi - t(K.mn) %*% (inv.K.mm %*% m.svi)) %*% (t(d.K.mn) %*% (inv.K.mm %*% m.svi) + t(K.mn) %*% (d.inv.K.mm %*% m.svi)) / sigma.sq.svi - 
-#     (tr.d.K.nn - sum(diag(d.Q.nn))) / (2 * sigma.sq.svi) - 
-#     sum(sapply(seq(m.size), function(j) {S.svi[j, ] %*% d.sum.Lambda_i[, j]})) / 2 + 
-#     (sum(diag((inv.K.mm %*% S.svi %*% inv.K.mm - inv.K.mm) %*% d.K.mm)) - t(m.svi) %*% d.inv.K.mm %*% m.svi) / 2 
-#   return(output)
-# }
-# 
-# step.k.PerSE.m.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1, 
-#                                relevant.l, relevant.s, relevant.m, sigma.sq.svi, period) {
-#   d.K.mm <- rcpp_k_per(X.m.1, X.m.1, relevant.l, relevant.s, period, T) * rcpp_d_k_se_l(X.m.2, X.m.2, relevant.m, 1, T)
-#   d.inv.K.mm <- - inv.K.mm %*% d.K.mm %*% inv.K.mm
-#   d.K.mn <- rcpp_k_per(X.m.1, X.n.1, relevant.l, relevant.s, period, F) * rcpp_d_k_se_l(X.m.2, X.n.2, relevant.m, 1, F)
-#   d.Q.nn <-  t(d.K.mn) %*% inv.K.mm %*% K.mn + t(K.mn) %*% d.inv.K.mm %*% K.mn + t(K.mn) %*% inv.K.mm %*% d.K.mn
-#   d.sum.Lambda_i <- (d.inv.K.mm %*% K.mn %*% t(K.mn) %*% inv.K.mm + 
-#                        inv.K.mm %*% d.K.mn %*% t(K.mn) %*% inv.K.mm + 
-#                        inv.K.mm %*% K.mn %*% t(d.K.mn) %*% inv.K.mm + 
-#                        inv.K.mm %*% K.mn %*% t(K.mn) %*% d.inv.K.mm) / sigma.sq.svi 
-#   
-#   output <- t(y.svi - t(K.mn) %*% (inv.K.mm %*% m.svi)) %*% (t(d.K.mn) %*% (inv.K.mm %*% m.svi) + t(K.mn) %*% (d.inv.K.mm %*% m.svi)) / sigma.sq.svi - 
-#     sum(diag(-d.Q.nn)) / (2 * sigma.sq.svi) - 
-#     sum(sapply(seq(m.size), function(j) {S.svi[j, ] %*% d.sum.Lambda_i[, j]})) / 2 + 
-#     (sum(diag((inv.K.mm %*% S.svi %*% inv.K.mm - inv.K.mm) %*% d.K.mm)) - t(m.svi) %*% d.inv.K.mm %*% m.svi) / 2 
-#   return(output)
-# }
-# 
-# 
+# Hensman - PerxSE --------------------------------------------------------
+
+Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_step_k_perse_svi.cpp")
+
+
 # # Hensman - LinxSE -----------------------------------------------------------
 # 
 # step.k.LinSE.l.svi <- function(X.m.1, X.n.1, X.m.2 = X.m.1, X.n.2 = X.n.1, 
