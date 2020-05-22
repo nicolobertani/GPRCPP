@@ -52,7 +52,7 @@ mat rcpp_d_k_per_l(const mat &M, const mat &N, const double l, const double s, c
   return K;
 }
 
-mat rcpp_d_k_per_s(const mat M, const mat N, const double l, const double s, const int p, bool equal_matrices) {
+mat rcpp_d_k_per_s(const mat &M, const mat &N, const double l, const double s, const int p, bool equal_matrices) {
   // Rcout << "I am running.\n"; // progress message
   mat K;
 
