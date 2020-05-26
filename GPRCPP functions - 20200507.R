@@ -1,28 +1,45 @@
 library(RcppArmadillo)
+setwd("~/Dropbox (INSEAD)/Crime Modeling/CPP code/")
+# setwd("~/crime.modeling/Rscripts/helper_functions/")
+
 
 # SE - Function and derivatives ----------------------------------------------------
 
-Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_diff_sq_mx.cpp")
-Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_k_se_diff.cpp")
-Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_k_se.cpp")
-# Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_se_l.cpp")
-# Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_se_s.cpp")
+Rcpp::sourceCpp("rcpp_diff_sq_mx.cpp")
+Rcpp::sourceCpp("rcpp_k_se_diff.cpp")
+Rcpp::sourceCpp("rcpp_k_se.cpp")
+# Rcpp::sourceCpp("rcpp_d_k_se_l.cpp")
+# Rcpp::sourceCpp("rcpp_d_k_se_s.cpp")
 
 
 # Periodic - Function and derivatives -------------------------------------
 
-Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_diff_2norm_mx.cpp")
-Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_k_per_diff.cpp")
-Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_k_per.cpp")
-# Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_per_l.cpp")
-# Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_per_s.cpp")
+Rcpp::sourceCpp("rcpp_diff_2norm_mx.cpp")
+Rcpp::sourceCpp("rcpp_k_per_diff.cpp")
+Rcpp::sourceCpp("rcpp_k_per.cpp")
+# Rcpp::sourceCpp("rcpp_d_k_per_l.cpp")
+# Rcpp::sourceCpp("rcpp_d_k_per_s.cpp")
 
 
 # Linear - Function and derivatives -----------------------------------
 
-Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_k_lin.cpp")
-# Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_lin_l.cpp")
-# Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_d_k_lin_s.cpp")
+Rcpp::sourceCpp("rcpp_k_lin.cpp")
+# Rcpp::sourceCpp("rcpp_d_k_lin_l.cpp")
+# Rcpp::sourceCpp("rcpp_d_k_lin_s.cpp")
+
+# SExSE - Function and derivatives ----------------------------------------------------
+
+Rcpp::sourceCpp("rcpp_k_sese.cpp")
+
+
+# PerxSE - Function and derivatives ----------------------------------------------------
+
+Rcpp::sourceCpp("rcpp_k_perse.cpp")
+
+
+# LinxSE - Function and derivatives ----------------------------------------------------
+
+Rcpp::sourceCpp("rcpp_k_linse.cpp")
 
 
 # Titsias 2009 - functions ------------------------------------------------
@@ -168,35 +185,35 @@ update.variational.parameters <- function(sigma.sq.svi, step.size = 1e-2) {
 #   return(output)
 # }
 
-Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_step_sigma_sq_svi.cpp")
+Rcpp::sourceCpp("rcpp_step_sigma_sq_svi.cpp")
 
 
 # Hensman - SE+ ------------------------------------------------------------
 
-Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_step_k_se_svi.cpp")
+Rcpp::sourceCpp("rcpp_step_k_se_svi.cpp")
 
 
 # Hensman - Per+ -----------------------------------------------------------
 
-Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_step_k_per_svi.cpp")
+Rcpp::sourceCpp("rcpp_step_k_per_svi.cpp")
 
 
 # Hensman - Lin+ -----------------------------------------------------------
 
-Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_step_k_lin_svi.cpp")
+Rcpp::sourceCpp("rcpp_step_k_lin_svi.cpp")
 
 
 # Hensman - SExSE ------------------------------------------------------------
 
-Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_step_k_sese_svi.cpp")
+Rcpp::sourceCpp("rcpp_step_k_sese_svi.cpp")
 
 
 # Hensman - PerxSE --------------------------------------------------------
 
-Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_step_k_perse_svi.cpp")
+Rcpp::sourceCpp("rcpp_step_k_perse_svi.cpp")
 
 
 # Hensman - LinxSE -----------------------------------------------------------
 
-Rcpp::sourceCpp("~/Dropbox (INSEAD)/Crime Modeling/CPP code/rcpp_step_k_linse_svi.cpp")
+Rcpp::sourceCpp("rcpp_step_k_linse_svi.cpp")
 
