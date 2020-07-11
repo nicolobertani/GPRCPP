@@ -107,7 +107,7 @@ List rcpp_k_ARD(const mat &X, const mat &Y, const vec &p_vec, const bool equal_m
     K_0.set_size(X.n_rows, Y.n_rows);
     K_0.ones();
     K_cube.set_size(X.n_rows, Y.n_rows, p-1);
-    d_cube.set_size(X.n_rows, X.n_rows, p-1); // p-1 because only needed for characteristic length-scales
+    d_cube.set_size(X.n_rows, Y.n_rows, p-1); // p-1 because only needed for characteristic length-scales
   }
   // COMPUTE COVARIANCE MATRIX
   // populate list of covariance matrices
