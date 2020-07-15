@@ -38,3 +38,28 @@ vec d3_likelihood_m (const vec &y, const vec &f, const mat &M, const int i) {
 
 
 // [[Rcpp::export]]
+vec d_f_m (const vec &par_hat, const vec &f, const vec &y,
+  const mat &K_mm, const mat &W, const mat &M, mat const &d_mx) {
+    int m_size = f.n_elem;
+    vec v_out = zeros<vec>(m_size);
+    sp_mat I_m = zeros<sp_mat>(m_size, m_size);
+    I_m.diag().ones();
+    vec d_lik_vec = d_likelihood_m(y, f, M);
+    v_out = solve(I_m + K_mm * W, d_mx * d_lik_vec);
+    return(v_out);
+  }
+/*
+d.f.m <- function(par.hat, f.m = f.m.hat) {
+  K.mm <- K.mm.f(par.hat)
+  chol.K.mm <- chol(K.mm)
+  inv.K.mm <- chol2inv(chol.K.mm)
+  K.nm <- K.nm.f(par.hat)
+  M <- K.nm %*% inv.K.mm
+  W <- - d2.likelihood.m(y.sample, f.m, M)
+  d.K.list <- self.derivative.list(par.hat)
+  dfm <- lapply(d.K.list, function(d.mx) {
+    solve(diag(m.size) + K.mm %*% W, d.mx %*% d.likelihood.m(y.sample, f.m, M))
+  })
+  return(dfm)
+}
+*/
