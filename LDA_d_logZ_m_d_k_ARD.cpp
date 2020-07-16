@@ -198,35 +198,49 @@ vec d_f_m (const vec &par_hat, const vec &f, const vec &y,
 
 
 // [[Rcpp::export]]
-vec d_logZ_m (const vec &par, const vec &f, const mat &X, const mat &Y, const bool &equal_mx) {
-  int p_size = par.n_elem;
+vec d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const mat &Y, const double &jitter) {
+  // initialize values
   int m_size = f.n_elem;
-  cube all_K_mm = k_ARD(X, X, par, T);
-  mat K_mm = all_K_mm(0);
+  int p_size = par.n_elem;
+  vec out = zeros<vec>(p_size);
+  // mm part
+  cube all_K_mm = k_ARD(X, X, par, 1); // covariance and derivatives for mm
+  sp_mat jitter_mx = zeros<sp_mat>(m_size, m_size);
+  jitter_mx.diag().fill(jitter);
+  mat K_mm = all_K_mm.slice(0) + jitter_mx;
+  mat inv_K_mm = inv_sympd(K_mm);
+  // nm part
+  cube all_K_nm = k_ARD(Y, X, par, 0); // covariance and derivatives for nm
+  mat K_nm = all_K_nm.slice(0);
+  // other matrices
+  mat M = K_nm * inv_K_mm;
+  mat W = - d2_likelihood_m(y, f, M);
+  mat inv_A = inv_sympd(inv_K_mm + W);
+  vec inv_K_mm_f = inv_K_mm * f;
+  // calculate last term of gradient : sapply(seq(m.size), function(h) {diag(inv.A) %*% d3.likelihood.m(y.sample, f.m.hat, M, h)})
+  vec inv_A_d3_v = zeros<vec>(m_size);
+  for (size_t h = 0; h < m_size; h++) {
+    inv_A_d3_v(h) = dot(inv_A.diag(), d3_likelihood_m(y, f, M, h));
+  }
+  // calculate gradient entries
+  for (size_t p = 1; p <= p_size; p++) {
+    // diagonal for first trace entry
+    vec diag_1 = zeros<vec>(m_size);
+    for (size_t i = 0; i < m_size; i++) {
+      diag_1(i) = dot(inv_K_mm.row(i), all_K_mm.slice(p).col(i));
+    }
+    // gradient entry
+    out(p - 1) = as_scalar(
+      (y.t() * all_K_nm.slice(p)) * inv_K_mm_f -
+      ((y.t() * K_nm) * inv_K_mm) * (all_K_mm.slice(p) * inv_K_mm_f) -
+      (all_K_nm.slice(p) * inv_K_mm_f - K_nm * (inv_K_mm * (all_K_mm.slice(p) * inv_K_mm_f))).t() * exp(K_nm * inv_K_mm_f) +
+      .5 * (
+        inv_K_mm_f.t() * all_K_mm.slice(p) * inv_K_mm_f -
+        sum(diag_1) +
+        trace(inv_K_mm * inv_A * inv_K_mm * all_K_mm.slice(p)) -
+        d_f_m(par, f, y, K_mm, W, M, all_K_mm.slice(p)).t() * inv_A_d3_v
+      )
+    );
+  }
+  return(out);
 }
-
-
-/*
-d.logZ.m <- function(par.hat, f.m = f.m.hat) {
-  K.mm <- K.mm.f(par.hat)
-  chol.K.mm <- chol(K.mm)
-  inv.K.mm <- chol2inv(chol.K.mm)
-  K.nm <- K.nm.f(par.hat)
-  M <- K.nm %*% inv.K.mm
-  W <- - d2.likelihood.m(y.sample, f.m, M)
-  chol.A <- chol(inv.K.mm + W)
-  inv.A <- chol2inv(chol.A)
-  d.K.list <- list(self.derivative.list(par.hat), cross.derivative.list(par.hat))
-  output <- sapply(seq(length(par.hat)), function(i) {
-    t(y.sample) %*% d.K.list[[2]][[i]] %*% inv.K.mm %*% f.m -
-      t(y.sample) %*% K.nm %*% inv.K.mm %*% d.K.list[[1]][[i]] %*% inv.K.mm %*% f.m -
-      t(d.K.list[[2]][[i]] %*% inv.K.mm %*% f.m -
-          K.nm %*% inv.K.mm %*% d.K.list[[1]][[i]] %*% inv.K.mm %*% f.m) %*%
-      exp(K.nm %*% inv.K.mm %*% f.m) +
-      .5 * t(f.m) %*% inv.K.mm %*% d.K.list[[1]][[i]] %*% inv.K.mm %*% f.m -
-      .5 * sum(diag(inv.K.mm %*% d.K.list[[1]][[i]])) +
-      .5 * sum(diag(inv.K.mm %*% inv.A %*% inv.K.mm %*% d.K.list[[1]][[i]])) -
-      .5 * t(d.f.m(par.hat)[[i]]) %*% sapply(seq(m.size), function(h) {diag(inv.A) %*% d3.likelihood.m(y.sample, f.m.hat, M, h)})
-  })
-  return(- output)
-}*/
