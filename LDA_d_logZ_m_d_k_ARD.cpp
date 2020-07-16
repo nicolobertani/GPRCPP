@@ -84,7 +84,7 @@ mat d_K_se(const mat &M, const mat &N, const double &m, const bool &equal_matric
   return K;
 }
 
-cube rcpp_k_ARD(const mat &X, const mat &Y, const vec &p_vec, const bool &equal_mx) {
+cube k_ARD(const mat &X, const mat &Y, const vec &p_vec, const bool &equal_mx) {
   // initial checks
   if (!equal_mx) {
     if (X.n_cols != Y.n_cols) Rcout << "Unequal number of columns in the matrices.\n";
@@ -146,6 +146,13 @@ cube rcpp_k_ARD(const mat &X, const mat &Y, const vec &p_vec, const bool &equal_
   return out;
 }
 
+double log_d_pois(const vec &y, const vec &lambda) {
+  Function f("dpois");
+  NumericVector temp = f(y, lambda, 1);
+  vec out(as<vec>(temp));
+  return(sum(out));
+}
+
 vec d_likelihood_m (const vec &y, const vec &f, const mat &M) {
   vec E = exp(M * f);
   int m_size = f.n_elem;
@@ -191,10 +198,35 @@ vec d_f_m (const vec &par_hat, const vec &f, const vec &y,
 
 
 // [[Rcpp::export]]
-mat ARD(const mat &X, const mat &Y, const vec &p_vec, const bool &equal_mx, const int &slice_n) {
-  mat out;
-  cube temp;
-  temp = rcpp_k_ARD(X, Y, p_vec, equal_mx);
-  out = temp.slice(slice_n);
-  return(out);
+vec d_logZ_m (const vec &par, const vec &f, const mat &X, const mat &Y, const bool &equal_mx) {
+  int p_size = par.n_elem;
+  int m_size = f.n_elem;
+  cube all_K_mm = k_ARD(X, X, par, T);
+  mat K_mm = all_K_mm(0);
 }
+
+
+/*
+d.logZ.m <- function(par.hat, f.m = f.m.hat) {
+  K.mm <- K.mm.f(par.hat)
+  chol.K.mm <- chol(K.mm)
+  inv.K.mm <- chol2inv(chol.K.mm)
+  K.nm <- K.nm.f(par.hat)
+  M <- K.nm %*% inv.K.mm
+  W <- - d2.likelihood.m(y.sample, f.m, M)
+  chol.A <- chol(inv.K.mm + W)
+  inv.A <- chol2inv(chol.A)
+  d.K.list <- list(self.derivative.list(par.hat), cross.derivative.list(par.hat))
+  output <- sapply(seq(length(par.hat)), function(i) {
+    t(y.sample) %*% d.K.list[[2]][[i]] %*% inv.K.mm %*% f.m -
+      t(y.sample) %*% K.nm %*% inv.K.mm %*% d.K.list[[1]][[i]] %*% inv.K.mm %*% f.m -
+      t(d.K.list[[2]][[i]] %*% inv.K.mm %*% f.m -
+          K.nm %*% inv.K.mm %*% d.K.list[[1]][[i]] %*% inv.K.mm %*% f.m) %*%
+      exp(K.nm %*% inv.K.mm %*% f.m) +
+      .5 * t(f.m) %*% inv.K.mm %*% d.K.list[[1]][[i]] %*% inv.K.mm %*% f.m -
+      .5 * sum(diag(inv.K.mm %*% d.K.list[[1]][[i]])) +
+      .5 * sum(diag(inv.K.mm %*% inv.A %*% inv.K.mm %*% d.K.list[[1]][[i]])) -
+      .5 * t(d.f.m(par.hat)[[i]]) %*% sapply(seq(m.size), function(h) {diag(inv.A) %*% d3.likelihood.m(y.sample, f.m.hat, M, h)})
+  })
+  return(- output)
+}*/
