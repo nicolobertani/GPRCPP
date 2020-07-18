@@ -198,11 +198,13 @@ vec d_f_m (const vec &par_hat, const vec &f, const vec &y,
 
 
 // [[Rcpp::export]]
-vec d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const mat &Y, const double &jitter) {
+List d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const mat &Y, const double &jitter) {
   // initialize values
   int m_size = f.n_elem;
   int p_size = par.n_elem;
-  vec out = zeros<vec>(p_size);
+  List out(2);
+  vec grad = zeros<vec>(p_size);
+  double logZ;
   // mm part
   cube all_K_mm = k_ARD(X, X, par, 1); // covariance and derivatives for mm
   sp_mat jitter_mx = zeros<sp_mat>(m_size, m_size);
@@ -215,8 +217,16 @@ vec d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const ma
   // other matrices
   mat M = K_nm * inv_K_mm;
   mat W = - d2_likelihood_m(y, f, M);
-  mat inv_A = inv_sympd(inv_K_mm + W);
+  mat A = inv_K_mm + W;
+  mat inv_A = inv_sympd(A);
   vec inv_K_mm_f = inv_K_mm * f;
+  // LOG-LIKELIHOOD
+  double val1, val2, sign1, sign2;
+  log_det(val1, sign1, K_mm);
+  log_det(val2, sign2, A);
+  logZ = log_d_pois(y, exp(M * f)) - .5 * (dot(f, inv_K_mm * f) + val1 * sign1 + val2 * sign2);
+  out(0) = logZ;
+  // GRADIENT OF LOG-LIKELIHOOD
   // calculate last term of gradient : sapply(seq(m.size), function(h) {diag(inv.A) %*% d3.likelihood.m(y.sample, f.m.hat, M, h)})
   vec inv_A_d3_v = zeros<vec>(m_size);
   for (size_t h = 0; h < m_size; h++) {
@@ -230,7 +240,7 @@ vec d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const ma
       diag_1(i) = dot(inv_K_mm.row(i), all_K_mm.slice(p).col(i));
     }
     // gradient entry
-    out(p - 1) = as_scalar(
+    grad(p - 1) = as_scalar(
       (y.t() * all_K_nm.slice(p)) * inv_K_mm_f -
       ((y.t() * K_nm) * inv_K_mm) * (all_K_mm.slice(p) * inv_K_mm_f) -
       (all_K_nm.slice(p) * inv_K_mm_f - K_nm * (inv_K_mm * (all_K_mm.slice(p) * inv_K_mm_f))).t() * exp(K_nm * inv_K_mm_f) +
@@ -242,5 +252,6 @@ vec d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const ma
       )
     );
   }
+  out(1) = grad;
   return(out);
 }
