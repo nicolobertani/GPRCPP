@@ -88,7 +88,7 @@ double log_d_pois(const vec &y, const vec &lambda) {
   return(sum(out));
 }
 
-vec neg_d_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lambda, const int &m_size) {
+vec d_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lambda, const int &m_size) {
   vec v_out = zeros<vec>(m_size);
   for (size_t j = 0; j < m_size; j++) {
     v_out(j) = dot(y - lambda, M.col(j));
@@ -98,10 +98,11 @@ vec neg_d_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lam
 
 
 // [[Rcpp::export]]
-List neg_d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const mat &Y, const double &jitter, const bool &compute_d) {
+List neg_d_f_m_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const mat &Y, const double &jitter, const bool &compute_d) {
   // initialize values
   int m_size = f.n_elem;
   List out(2);
+  double approx_logZ;
   // mm part
   sp_mat jitter_mx = zeros<sp_mat>(m_size, m_size);
   jitter_mx.diag().fill(jitter);
@@ -109,10 +110,17 @@ List neg_d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, con
   mat inv_K_mm = inv_sympd(K_mm);
   // nm part
   mat K_nm = k_ARD(Y, X, par, 0);
+  // other matrices and input
   mat M = K_nm * inv_K_mm;
   vec lambda = exp(M * f);
-  // compute values
-  out(0) = - log_d_pois(y, lambda);
-  if(compute_d) out(1) = - neg_d_likelihood_m(y, f, M, lambda, m_size);
+  vec inv_K_mm_f = inv_K_mm * f;
+  // LOG-LIKELIHOOD
+  approx_logZ = log_d_pois(y, lambda) - .5 * dot(f, inv_K_mm_f); //omitting terms independent of f_m
+  out(0) = - approx_logZ;
+  if(compute_d) {
+    vec d_logZ_f_m;
+    d_logZ_f_m = d_likelihood_m(y, f, M, lambda, m_size) - inv_K_mm_f;
+    out(1) = - d_logZ_f_m;
+  }
   return(out);
 }
