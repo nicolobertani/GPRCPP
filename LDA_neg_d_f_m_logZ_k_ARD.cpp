@@ -98,7 +98,7 @@ vec neg_d_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lam
 
 
 // [[Rcpp::export]]
-List neg_d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const mat &Y, const double &jitter) {
+List neg_d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const mat &Y, const double &jitter, const bool &compute_d) {
   // initialize values
   int m_size = f.n_elem;
   List out(2);
@@ -113,6 +113,6 @@ List neg_d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, con
   vec lambda = exp(M * f);
   // compute values
   out(0) = - log_d_pois(y, lambda);
-  out(1) = - neg_d_likelihood_m(y, f, M, lambda, m_size);
+  if(compute_d) out(1) = - neg_d_likelihood_m(y, f, M, lambda, m_size);
   return(out);
 }
