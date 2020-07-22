@@ -153,45 +153,42 @@ double log_d_pois(const vec &y, const vec &lambda) {
   return(sum(out));
 }
 
-vec d_likelihood_m (const vec &y, const vec &f, const mat &M) {
-  vec E = exp(M * f);
+vec d_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lambda) {
   int m_size = f.n_elem;
   vec v_out = zeros<vec>(m_size);
   for (size_t j = 0; j < m_size; j++) {
-    v_out(j) = dot(y - E, M.col(j));
+    v_out(j) = dot(y - lambda, M.col(j));
   }
   return(v_out);
 }
 
-mat d2_likelihood_m (const vec &y, const vec &f, const mat &M) {
-  vec E = exp(M * f);
+mat d2_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lambda) {
   int m_size = f.n_elem;
   mat mx_out = zeros<mat>(m_size, m_size);
   for (size_t j = 0; j < m_size; j++) {
     for (size_t k = 0; k < m_size; k++) {
-      mx_out(j, k) = - dot(E, M.col(j) % M.col(k));
+      mx_out(j, k) = - dot(lambda, M.col(j) % M.col(k));
     }
   }
   return(mx_out);
 }
 
-vec d3_likelihood_m (const vec &y, const vec &f, const mat &M, const int i) {
-  vec E = exp(M * f);
+vec d3_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lambda, const int i) {
   int m_size = f.n_elem;
   vec v_out = zeros<vec>(m_size);
   for (size_t k = 0; k < m_size; k++) {
-    v_out(k) = - dot(E, M.col(k) % M.col(k) % M.col(i));
+    v_out(k) = - dot(lambda, M.col(k) % M.col(k) % M.col(i));
   }
   return(v_out);
 }
 
 vec d_f_m (const vec &par_hat, const vec &f, const vec &y,
-  const mat &K_mm, const mat &W, const mat &M, mat const &d_mx) {
+  const mat &K_mm, const mat &W, const mat &M, const vec &lambda, mat const &d_mx) {
     int m_size = f.n_elem;
     vec v_out = zeros<vec>(m_size);
     sp_mat I_m = zeros<sp_mat>(m_size, m_size);
     I_m.diag().ones();
-    vec d_lik_vec = d_likelihood_m(y, f, M);
+    vec d_lik_vec = d_likelihood_m(y, f, M, lambda);
     v_out = solve(I_m + K_mm * W, d_mx * d_lik_vec);
     return(v_out);
   }
@@ -216,7 +213,8 @@ List d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const m
   mat K_nm = all_K_nm.slice(0);
   // other matrices
   mat M = K_nm * inv_K_mm;
-  mat W = - d2_likelihood_m(y, f, M);
+  vec lambda = exp(M * f);
+  mat W = - d2_likelihood_m(y, f, M, lambda);
   mat A = inv_K_mm + W;
   mat inv_A = inv_sympd(A);
   vec inv_K_mm_f = inv_K_mm * f;
@@ -224,13 +222,13 @@ List d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const m
   double val1, val2, sign1, sign2;
   log_det(val1, sign1, K_mm);
   log_det(val2, sign2, A);
-  logZ = log_d_pois(y, exp(M * f)) - .5 * (dot(f, inv_K_mm * f) + val1 * sign1 + val2 * sign2);
+  logZ = log_d_pois(y, lambda) - .5 * (dot(f, inv_K_mm * f) + val1 * sign1 + val2 * sign2);
   out(0) = logZ;
   // GRADIENT OF LOG-LIKELIHOOD
   // calculate last term of gradient : sapply(seq(m.size), function(h) {diag(inv.A) %*% d3.likelihood.m(y.sample, f.m.hat, M, h)})
   vec inv_A_d3_v = zeros<vec>(m_size);
   for (size_t h = 0; h < m_size; h++) {
-    inv_A_d3_v(h) = dot(inv_A.diag(), d3_likelihood_m(y, f, M, h));
+    inv_A_d3_v(h) = dot(inv_A.diag(), d3_likelihood_m(y, f, M, lambda, h));
   }
   // calculate gradient entries
   for (size_t p = 1; p <= p_size; p++) {
@@ -248,7 +246,7 @@ List d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const m
         inv_K_mm_f.t() * all_K_mm.slice(p) * inv_K_mm_f -
         sum(diag_1) +
         trace(inv_K_mm * inv_A * inv_K_mm * all_K_mm.slice(p)) -
-        d_f_m(par, f, y, K_mm, W, M, all_K_mm.slice(p)).t() * inv_A_d3_v
+        d_f_m(par, f, y, K_mm, W, M, lambda, all_K_mm.slice(p)).t() * inv_A_d3_v
       )
     );
   }
