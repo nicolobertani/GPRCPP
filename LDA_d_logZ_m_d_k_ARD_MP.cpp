@@ -175,6 +175,7 @@ double log_d_pois(const vec &y, const vec &lambda) {
 
 vec d_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lambda, const int &m_size) {
   vec v_out = zeros<vec>(m_size);
+  #pragma omp parallel for schedule(static)
   for (size_t j = 0; j < m_size; j++) {
     v_out(j) = dot(y - lambda, M.col(j));
   }
@@ -183,6 +184,7 @@ vec d_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lambda,
 
 mat d2_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lambda, const int &m_size) {
   mat mx_out = zeros<mat>(m_size, m_size);
+  #pragma omp parallel for collapse(2) schedule(static)
   for (size_t j = 0; j < m_size; j++) {
     for (size_t k = 0; k < m_size; k++) {
       mx_out(j, k) = - dot(lambda, M.col(j) % M.col(k));
@@ -193,6 +195,7 @@ mat d2_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lambda
 
 vec d3_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lambda, const int &m_size, const int i) {
   vec v_out = zeros<vec>(m_size);
+  #pragma omp parallel for schedule(static)
   for (size_t k = 0; k < m_size; k++) {
     v_out(k) = - dot(lambda, M.col(k) % M.col(k) % M.col(i));
   }

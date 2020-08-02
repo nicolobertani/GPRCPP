@@ -97,6 +97,7 @@ double log_d_pois(const vec &y, const vec &lambda) {
 
 vec d_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lambda, const int &m_size) {
   vec v_out = zeros<vec>(m_size);
+  #pragma omp parallel for schedule(static)
   for (size_t j = 0; j < m_size; j++) {
     v_out(j) = dot(y - lambda, M.col(j));
   }
