@@ -1,6 +1,8 @@
 #include <RcppArmadillo.h>
 #include <omp.h>
+
 // [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::plugins(openmp)]]
 
 using namespace Rcpp;
 using namespace arma;
@@ -20,6 +22,7 @@ double d_k_se_m(const vec &x, const vec &y, const double &m) {
 mat K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices) {
   // Rcout << "I am running.\n"; // progress message
   mat K;
+  omp_set_dynamic(0);
 
   if (equal_matrices == 1) {
 
@@ -27,6 +30,7 @@ mat K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices
     K.set_size(M.n_rows, M.n_rows);
     K.zeros();
     // fill upper triangular wo diag
+    #pragma omp parallel for collapse(2)
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = r + 1; c < M.n_rows; c++) {
         K(r, c) = k_se(M.row(r).t(), M.row(c).t(), m);
@@ -34,6 +38,7 @@ mat K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices
     }
     K = K + K.t();
     // fill diag
+    #pragma omp parallel for
     for (int i = 0; i < M.n_rows; i++) {
       K(i,i) = k_se(M.row(i).t(), M.row(i).t(), m);
     }
@@ -43,6 +48,7 @@ mat K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices
     // Rcout << "Matrices are NOT equal.\n"; // progress message
     K.set_size(M.n_rows, N.n_rows);
     // fill everything
+    #pragma omp parallel for collapse(2)
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = 0; c < N.n_rows; c++) {
         K(r, c) = k_se(M.row(r).t(), N.row(c).t(), m);
@@ -56,6 +62,7 @@ mat K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices
 mat d_K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices) {
   // Rcout << "I am running.\n"; // progress message
   mat K;
+  omp_set_dynamic(0);
 
   if (equal_matrices == 1) {
 
@@ -63,6 +70,7 @@ mat d_K_se(const mat &M, const mat &N, const double &m, const bool &equal_matric
     K.set_size(M.n_rows, M.n_rows);
     K.zeros();
     // fill upper triangular wo diag
+    #pragma omp parallel for collapse(2)
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = r + 1; c < M.n_rows; c++) {
         K(r, c) = d_k_se_m(M.row(r).t(), M.row(c).t(), m);
@@ -75,6 +83,7 @@ mat d_K_se(const mat &M, const mat &N, const double &m, const bool &equal_matric
     // Rcout << "Matrices are NOT equal.\n"; // progress message
     K.set_size(M.n_rows, N.n_rows);
     // fill everything
+    #pragma omp parallel for collapse(2)
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = 0; c < N.n_rows; c++) {
         K(r, c) = d_k_se_m(M.row(r).t(), N.row(c).t(), m);
@@ -202,7 +211,7 @@ vec d_f_m (const vec &par_hat, const vec &f, const vec &y,
 
 
 // [[Rcpp::export]]
-List d_logZ_m_2 (const vec &par, const vec &y, const vec &f, const mat &X, const mat &Y, const double &jitter, const bool &compute_d) {
+List d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const mat &Y, const double &jitter, const bool &compute_d) {
   // initialize values
   int m_size = f.n_elem;
   int p_size = par.n_elem;
