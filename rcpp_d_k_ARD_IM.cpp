@@ -79,9 +79,8 @@ mat d_K_se(const mat &M, const mat &N, const double m, const bool equal_matrices
 }
 
 double d_k_IM_partial(const double &SUK_i, const double &dSUK_i, const double &SUK_j, const double &dSUK_j,
-                      const double &ell, const double &bandwidth, const int &nb) {
-  double res = pow((SUK_i - SUK_j) / (sq2pi * nb), 2) / (2 * pow(ell, 2) * bandwidth) -
-                (SUK_i - SUK_j) * (dSUK_i - dSUK_j) / pow(sq2pi * nb * ell, 2);
+                      const double &ell, const double &bandwidth, const double &nb) {
+  double res = (pow((SUK_i - SUK_j), 2) / bandwidth - (SUK_i - SUK_j) * (dSUK_i - dSUK_j)) / pow(sq2pi * nb * ell, 2);
   return res;
 }
 
@@ -148,18 +147,21 @@ List rcpp_k_ARD_IM(const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const 
   // generate variables
   cube K_cube;
   cube d_cube;
+  cube b_cube;
   mat K_0;
-  List out(p + 1);
+  List out(1 + p + b_vec.n_elem);
   if (equal_mx == 1) {
     K_0.set_size(X.n_rows, X.n_rows);
     K_0.ones();
     K_cube.set_size(X.n_rows, X.n_rows, p-1);
     d_cube.set_size(X.n_rows, X.n_rows, p-1); // p-1 because only needed for characteristic length-scales
+    b_cube.set_size(X.n_rows, X.n_rows, p-1); // p-1 = #b
   } else {
     K_0.set_size(X.n_rows, Y.n_rows);
     K_0.ones();
     K_cube.set_size(X.n_rows, Y.n_rows, p-1);
     d_cube.set_size(X.n_rows, Y.n_rows, p-1); // p-1 because only needed for characteristic length-scales
+    b_cube.set_size(X.n_rows, Y.n_rows, p-1); // p-1 = #b
   }
   // COMPUTE COVARIANCE MATRIX
   // populate list of covariance matrices
@@ -174,6 +176,7 @@ List rcpp_k_ARD_IM(const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const 
   // COMPUTE DERIVATIVE MATRICES
   // compute all individual derivative matrices, first for characteristic length-scales l
   if (compute_ds) {
+    // COMPUTE DERIVATIVES FOR LENGTH-SCALES
     for (size_t i = 0; i < p - 1; i++) {
       d_cube.slice(i) = d_K_se(X.col(i), Y.col(i), p_vec(i), equal_mx);
     }
@@ -190,8 +193,15 @@ List rcpp_k_ARD_IM(const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const 
       }
       out(i + 1) = pow(p_vec(p - 1), 2) * temp;
     }
-    // Last entry in the outpust list is for the derivative of the amplitude s
+    // Last entry in the output list is for the derivative of the amplitude s
     out(p) = 2 * p_vec(p - 1) * K_0;
+    // COMPUTE DERIVATIVES FOR BANDWIDTHS
+    for (size_t i = 0; i < p - 1; i++) {
+      b_cube.slice(i) = d_k_IM_partial(SUK_X.col(i), dSUK_X.col(i), SUK_Y.col(i), dSUK_Y.col(i), p_vec(i), b_vec(i), n_vec(i), equal_mx);
+    }
+    for (size_t i = 0; i < p - 1; i++) {
+      out(p + 1 + i) = pow(p_vec(p - 1), 2) * K_0 % b_cube.slice(i);
+    }
   }
   return out;
 }
