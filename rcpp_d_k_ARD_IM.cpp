@@ -148,8 +148,8 @@ List rcpp_k_ARD_IM(const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const 
   cube K_cube;
   cube d_cube;
   cube b_cube;
-  mat K_0;
   List out(1 + p + b_vec.n_elem);
+  mat K_0;
   if (equal_mx == 1) {
     K_0.set_size(X.n_rows, X.n_rows);
     K_0.ones();
