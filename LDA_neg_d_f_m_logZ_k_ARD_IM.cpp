@@ -11,12 +11,10 @@ double k_se(const vec &x, const vec &y, const double &m) {
 }
 
 mat K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices) {
-  // Rcout << "I am running.\n"; // progress message
   mat K;
 
   if (equal_matrices == 1) {
 
-    // Rcout << "Matrices are equal.\n"; // progress message
     K.set_size(M.n_rows, M.n_rows);
     K.zeros();
     // fill upper triangular wo diag
@@ -33,7 +31,6 @@ mat K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices
 
   } else {
 
-    // Rcout << "Matrices are NOT equal.\n"; // progress message
     K.set_size(M.n_rows, N.n_rows);
     // fill everything
     for (int r = 0; r < M.n_rows; r++) {
@@ -42,11 +39,10 @@ mat K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices
       }
     }
   }
-  // Rcout << "Ok, I got to the end.\n"; // progress message
   return K;
 }
 
-mat k_ARD(const mat &X, const mat &Y, const vec &p_vec, const bool &equal_mx) {
+mat k_ARD(const mat &X, const mat &Y, const vec &p_vec, const bool &equal_mx) { // no difference from k_ARD_IM
   // initial checks
   if (!equal_mx) {
     if (X.n_cols != Y.n_cols) Rcout << "Unequal number of columns in the matrices.\n";

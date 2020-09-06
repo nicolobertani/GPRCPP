@@ -19,7 +19,6 @@ double d_k_se_m(const vec &x, const vec &y, const double &m) {
 }
 
 mat K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices) {
-  // Rcout << "I am running.\n"; // progress message
   mat K;
 
   if (equal_matrices == 1) {
@@ -85,7 +84,7 @@ double d_k_IM_partial(const double &SUK_i, const double &dSUK_i, const double &S
   return res;
 }
 
-mat d_k_IM_partial(const vec &SUK_vec_x, const vec &dSUK_vec_x, const vec &SUK_vec_y, const vec &dSUK_vec_y,
+mat d_K_IM_partial(const vec &SUK_vec_x, const vec &dSUK_vec_x, const vec &SUK_vec_y, const vec &dSUK_vec_y,
   const double &ell, const double &bandwidth, const int &n, const bool &equal_vec) {
   mat K;
   double nb = n * bandwidth;
@@ -202,7 +201,7 @@ cube k_ARD_IM(const mat &X, const mat &Y, const mat &SUK_X, const mat &dSUK_X, c
     out.slice(p) = 2 * p_vec(p - 1) * K_0;
     // COMPUTE DERIVATIVES FOR BANDWIDTHS
     for (size_t i = 0; i < p - 1; i++) {
-      b_cube.slice(i) = d_k_IM_partial(SUK_X.col(i), dSUK_X.col(i), SUK_Y.col(i), dSUK_Y.col(i), p_vec(i), b_vec(i), n_vec(i), equal_mx);
+      b_cube.slice(i) = d_K_IM_partial(SUK_X.col(i), dSUK_X.col(i), SUK_Y.col(i), dSUK_Y.col(i), p_vec(i), b_vec(i), n_vec(i), equal_mx);
     }
     for (size_t i = 0; i < p - 1; i++) {
       out.slice(p + 1 + i) = pow(p_vec(p - 1), 2) * K_0 % b_cube.slice(i);
