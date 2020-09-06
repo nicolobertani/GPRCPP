@@ -130,13 +130,9 @@ mat SUK_to_IM(const mat &SUK, const vec &b_vec, const vec &n_vec) {
   return(IM);
 }
 
-cube k_ARD(const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const mat &dSUK_Y,
+cube k_ARD_IM(const mat &X, const mat &Y, const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const mat &dSUK_Y,
                    const vec &p_vec, const vec &b_vec, const vec &n_vec,
-                   const bool equal_mx, const bool compute_ds) {
-  // GENERATE X AND Y FROM SUK_X AND SUK_Y
-  // These are the Intensity Measures
-  mat X = SUK_to_IM(SUK_X, b_vec, n_vec);
-  mat Y = SUK_to_IM(SUK_Y, b_vec, n_vec);
+                   const bool &equal_mx, const bool &compute_d) {
   // initial checks
   if (!equal_mx) {
     if (X.n_cols != Y.n_cols) Rcout << "Unequal number of columns in the matrices.\n";
@@ -209,7 +205,7 @@ cube k_ARD(const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const mat &dSU
       b_cube.slice(i) = d_k_IM_partial(SUK_X.col(i), dSUK_X.col(i), SUK_Y.col(i), dSUK_Y.col(i), p_vec(i), b_vec(i), n_vec(i), equal_mx);
     }
     for (size_t i = 0; i < p - 1; i++) {
-      out(p + 1 + i) = pow(p_vec(p - 1), 2) * K_0 % b_cube.slice(i);
+      out.slice(p + 1 + i) = pow(p_vec(p - 1), 2) * K_0 % b_cube.slice(i);
     }
   }
   return out;
@@ -248,7 +244,7 @@ vec d3_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lambda
   return(v_out);
 }
 
-vec d_f_m (const vec &par_hat, const vec &f, const vec &y,
+vec d_f_m (const vec &f, const vec &y,
   const mat &K_mm, const mat &W, const mat &M, const vec &lambda, const int &m_size, mat const &d_mx) {
     vec v_out = zeros<vec>(m_size);
     sp_mat I_m = zeros<sp_mat>(m_size, m_size);
@@ -260,15 +256,21 @@ vec d_f_m (const vec &par_hat, const vec &f, const vec &y,
 
 
 // [[Rcpp::export]]
-List d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const mat &Y, const double &jitter, const bool &compute_d) {
+List d_logZ_m_IM (const vec &p_vec, const vec &b_vec, const vec &n_vec, const vec &y, const vec &f,
+  const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const mat &dSUK_Y,
+  const double &jitter, const bool &compute_d) {
+  // GENERATE X AND Y FROM SUK_X AND SUK_Y
+  // These are the Intensity Measures
+  mat X = SUK_to_IM(SUK_X, b_vec, n_vec);
+  mat Y = SUK_to_IM(SUK_Y, b_vec, n_vec);
   // initialize values
   int m_size = f.n_elem;
-  int p_size = par.n_elem;
+  int p_size = p_vec.n_elem;
+  int b_size = b_vec.n_elem;
   List out(2);
-  vec grad = zeros<vec>(p_size);
   double logZ;
   // mm part
-  cube all_K_mm = k_ARD(X, X, par, 1, compute_d); // covariance and derivatives for mm
+  cube all_K_mm = k_ARD_IM(X, X, SUK_X, dSUK_X, SUK_X, dSUK_X, p_vec, b_vec, n_vec, 1, compute_d); // covariance and derivatives for mm
   sp_mat jitter_mx = zeros<sp_mat>(m_size, m_size);
   jitter_mx.diag().fill(jitter);
   mat K_mm = all_K_mm.slice(0) + jitter_mx;
@@ -276,7 +278,7 @@ List d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const m
   mat inv_chol_K_mm = inv(trimatu(chol_K_mm));
   mat inv_K_mm = inv_chol_K_mm * inv_chol_K_mm.t();
   // nm part
-  cube all_K_nm = k_ARD(Y, X, par, 0, compute_d); // covariance and derivatives for nm
+  cube all_K_nm = k_ARD_IM(Y, X, SUK_Y, dSUK_Y, SUK_X, dSUK_X, p_vec, b_vec, n_vec, 0, compute_d); // covariance and derivatives for nm
   mat K_nm = all_K_nm.slice(0);
   // other matrices and input
   mat M = K_nm * inv_K_mm;
@@ -291,21 +293,22 @@ List d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const m
   logZ = log_d_pois(y, lambda) - .5 * dot(f, inv_K_mm_f) - sum(log(chol_K_mm.diag())) - sum(log(chol_A.diag()));
   out(0) = logZ;
   // GRADIENT OF LOG-LIKELIHOOD
-  // calculate last term of gradient : sapply(seq(m.size), function(h) {diag(inv.A) %*% d3.likelihood.m(y.sample, f.m.hat, M, h)})
   if (compute_d) {
+    vec gradient = zeros<vec>(p_size + b_size);
+    // calculate last term of gradient : sapply(seq(m.size), function(h) {diag(inv.A) %*% d3.likelihood.m(y.sample, f.m.hat, M, h)})
     vec inv_A_d3_v = zeros<vec>(m_size);
     for (size_t h = 0; h < m_size; h++) {
       inv_A_d3_v(h) = dot(inv_A.diag(), d3_likelihood_m(y, f, M, lambda, m_size, h));
     }
     // calculate gradient entries
-    for (size_t p = 1; p <= p_size; p++) {
+    for (size_t p = 1; p <= p_size + b_size; p++) {
       // diagonal for first trace entry
       vec diag_1 = zeros<vec>(m_size);
       for (size_t i = 0; i < m_size; i++) {
         diag_1(i) = dot(inv_K_mm.row(i), all_K_mm.slice(p).col(i));
       }
       // gradient entry
-      grad(p - 1) = as_scalar(
+      gradient(p - 1) = as_scalar(
         (y.t() * all_K_nm.slice(p)) * inv_K_mm_f -
         ((y.t() * K_nm) * inv_K_mm) * (all_K_mm.slice(p) * inv_K_mm_f) -
         (all_K_nm.slice(p) * inv_K_mm_f - K_nm * (inv_K_mm * (all_K_mm.slice(p) * inv_K_mm_f))).t() * exp(K_nm * inv_K_mm_f) +
@@ -313,11 +316,11 @@ List d_logZ_m (const vec &par, const vec &y, const vec &f, const mat &X, const m
           inv_K_mm_f.t() * all_K_mm.slice(p) * inv_K_mm_f -
           sum(diag_1) +
           trace(inv_K_mm * inv_A * inv_K_mm * all_K_mm.slice(p)) -
-          d_f_m(par, f, y, K_mm, W, M, lambda, m_size, all_K_mm.slice(p)).t() * inv_A_d3_v
+          d_f_m(f, y, K_mm, W, M, lambda, m_size, all_K_mm.slice(p)).t() * inv_A_d3_v
         )
       );
     }
-    out(1) = grad;
+    out(1) = gradient;
   }
   return(out);
 }
