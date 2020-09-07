@@ -85,7 +85,7 @@ double d_k_IM_partial(const double &SUK_i, const double &dSUK_i, const double &S
 }
 
 mat d_K_IM_partial(const vec &SUK_vec_x, const vec &dSUK_vec_x, const vec &SUK_vec_y, const vec &dSUK_vec_y,
-  const double &ell, const double &bandwidth, const int &n, const bool &equal_vec) {
+  const double &ell, const double &bandwidth, const double &n, const bool &equal_vec) {
   mat K;
   double nb = n * bandwidth;
 
@@ -256,12 +256,8 @@ vec d_f_m (const vec &f, const vec &y,
 
 // [[Rcpp::export]]
 List d_logZ_m_IM (const vec &p_vec, const vec &b_vec, const vec &n_vec, const vec &y, const vec &f,
-  const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const mat &dSUK_Y,
+  const mat &X, const mat &SUK_X, const mat &dSUK_X, const mat &Y, const mat &SUK_Y, const mat &dSUK_Y,
   const double &jitter, const bool &compute_d) {
-  // GENERATE X AND Y FROM SUK_X AND SUK_Y
-  // These are the Intensity Measures
-  mat X = SUK_to_IM(SUK_X, b_vec, n_vec);
-  mat Y = SUK_to_IM(SUK_Y, b_vec, n_vec);
   // initialize values
   int m_size = f.n_elem;
   int p_size = p_vec.n_elem;
