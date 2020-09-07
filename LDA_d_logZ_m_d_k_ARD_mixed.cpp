@@ -6,18 +6,16 @@ using namespace arma;
 
 double sq2pi = pow(2 * datum::pi, .5);
 
+
+// COVARIANCE FUNCTIONS --------------------------------------------------------
+// single entry functions
 double k_se(const vec &x, const vec &y, const double &m) {
   double df = pow(norm(x - y, 2), 2);
   double res = exp(- df / (2 * pow(m, 2)));
   return res;
 }
 
-double d_k_se_m(const vec &x, const vec &y, const double &m) {
-  double df = pow(norm(x - y, 2), 2);
-  double res = df / pow(m, 3) * exp(- df / (2 * pow(m, 2)));
-  return res;
-}
-
+// matrix functions
 mat K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices) {
   mat K;
 
@@ -50,6 +48,22 @@ mat K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices
   return K;
 }
 
+
+// DERIVATIVES OF THE COVARIANCE FUNCTION --------------------------------------
+// single entry functions
+double d_k_se_m(const vec &x, const vec &y, const double &m) {
+  double df = pow(norm(x - y, 2), 2);
+  double res = df / pow(m, 3) * exp(- df / (2 * pow(m, 2)));
+  return res;
+}
+
+double d_k_IM_partial(const double &SUK_i, const double &dSUK_i, const double &SUK_j, const double &dSUK_j,
+                      const double &ell, const double &bandwidth, const double &nb) {
+  double res = (pow((SUK_i - SUK_j), 2) / bandwidth - (SUK_i - SUK_j) * (dSUK_i - dSUK_j)) / pow(sq2pi * nb * ell, 2);
+  return res;
+}
+
+// matrix functions
 mat d_K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices) {
   mat K;
 
@@ -76,12 +90,6 @@ mat d_K_se(const mat &M, const mat &N, const double &m, const bool &equal_matric
     }
   }
   return K;
-}
-
-double d_k_IM_partial(const double &SUK_i, const double &dSUK_i, const double &SUK_j, const double &dSUK_j,
-                      const double &ell, const double &bandwidth, const double &nb) {
-  double res = (pow((SUK_i - SUK_j), 2) / bandwidth - (SUK_i - SUK_j) * (dSUK_i - dSUK_j)) / pow(sq2pi * nb * ell, 2);
-  return res;
 }
 
 mat d_K_IM_partial(const vec &SUK_vec_x, const vec &dSUK_vec_x, const vec &SUK_vec_y, const vec &dSUK_vec_y,
@@ -118,6 +126,8 @@ mat d_K_IM_partial(const vec &SUK_vec_x, const vec &dSUK_vec_x, const vec &SUK_v
   return K;
 }
 
+
+// COMPLETE COVARIANCE MATRIX AND DERIVATIVES ----------------------------------
 cube k_ARD_IM(const mat &X, const mat &Y, const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const mat &dSUK_Y,
                    const vec &p_vec, const vec &b_vec, const vec &n_vec,
                    const bool &equal_mx, const bool &compute_d) {
@@ -199,6 +209,8 @@ cube k_ARD_IM(const mat &X, const mat &Y, const mat &SUK_X, const mat &dSUK_X, c
   return out;
 }
 
+
+// LIKELIHOOD COMPONENTS -------------------------------------------------------
 double log_d_pois(const vec &y, const vec &lambda) {
   Function f("dpois");
   NumericVector temp = f(y, lambda, 1);
