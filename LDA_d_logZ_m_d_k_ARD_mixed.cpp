@@ -140,7 +140,7 @@ cube k_ARD_mixed(const mat &X, const mat &Y, const mat &SUK_X, const mat &dSUK_X
   // initial checks
   if (l_IM_size != b_size) Rcout << "Unequal number of lenghscales and bandwidth for IM.\n";
   if (l_IM_size != n_size) Rcout << "Unequal number of lenghscales and n for IM.\n";
-  if (X.n_cols != (l_IM_size + l_other_size - 1)) Rcout << "Unequal number of matrix columns and parameters.\n";
+  if (X.n_cols != (l_tot - 1)) Rcout << "Unequal number of matrix columns and parameters.\n";
   if (!equal_mx) {
     if (X.n_cols != Y.n_cols) Rcout << "Unequal number of columns in the matrices.\n";
   }
@@ -213,7 +213,7 @@ cube k_ARD_mixed(const mat &X, const mat &Y, const mat &SUK_X, const mat &dSUK_X
       b_cube.slice(i) = d_K_IM_partial(SUK_X.col(i), dSUK_X.col(i), SUK_Y.col(i), dSUK_Y.col(i), l_IM_vec(i), b_vec(i), n_vec(i), equal_mx);
     }
     for (size_t i = 0; i < b_size; i++) {
-      out.slice(p + 1 + i) = out.slice(0) % b_cube.slice(i);
+      out.slice(l_tot + 1 + i) = out.slice(0) % b_cube.slice(i);
     }
   }
   return out;
@@ -266,17 +266,21 @@ vec d_f_m (const vec &f, const vec &y,
 
 
 // [[Rcpp::export]]
-List d_logZ_m_IM (const vec &p_vec, const vec &b_vec, const vec &n_vec, const vec &y, const vec &f,
+List d_logZ_m_mixed (
+  const vec &l_IM_vec, const vec &b_vec, const vec &n_vec, const vec &l_other_vec,
+  const vec &y, const vec &f,
   const mat &X, const mat &SUK_X, const mat &dSUK_X, const mat &Y, const mat &SUK_Y, const mat &dSUK_Y,
   const double &jitter, const bool &compute_d) {
-  // initialize values
+  // create size variables
   int m_size = f.n_elem;
-  int p_size = p_vec.n_elem;
-  int b_size = b_vec.n_elem;
+  int l_IM_size = l_IM_vec.n_elem;
+  int l_other_size = l_other_vec.n_elem;
+  int l_tot = l_IM_size + l_other_size; // amplitude is the last parameter
+  // initialize values
   List out(2);
   double logZ;
   // mm part
-  cube all_K_mm = k_ARD_mixed(X, X, SUK_X, dSUK_X, SUK_X, dSUK_X, p_vec, b_vec, n_vec, 1, compute_d); // covariance and derivatives for mm
+  cube all_K_mm = k_ARD_mixed(X, X, SUK_X, dSUK_X, SUK_X, dSUK_X, l_IM_vec, b_vec, n_vec, l_other_vec, 1, compute_d); // covariance and derivatives for mm
   sp_mat jitter_mx = zeros<sp_mat>(m_size, m_size);
   jitter_mx.diag().fill(jitter);
   mat K_mm = all_K_mm.slice(0) + jitter_mx;
@@ -284,7 +288,7 @@ List d_logZ_m_IM (const vec &p_vec, const vec &b_vec, const vec &n_vec, const ve
   mat inv_chol_K_mm = inv(trimatu(chol_K_mm));
   mat inv_K_mm = inv_chol_K_mm * inv_chol_K_mm.t();
   // nm part
-  cube all_K_nm = k_ARD_mixed(Y, X, SUK_Y, dSUK_Y, SUK_X, dSUK_X, p_vec, b_vec, n_vec, 0, compute_d); // covariance and derivatives for nm
+  cube all_K_nm = k_ARD_mixed(Y, X, SUK_Y, dSUK_Y, SUK_X, dSUK_X, l_IM_vec, b_vec, n_vec, l_other_vec, 0, compute_d); // covariance and derivatives for nm
   mat K_nm = all_K_nm.slice(0);
   // other matrices and input
   mat M = K_nm * inv_K_mm;
@@ -300,14 +304,14 @@ List d_logZ_m_IM (const vec &p_vec, const vec &b_vec, const vec &n_vec, const ve
   out(0) = logZ;
   // GRADIENT OF LOG-LIKELIHOOD
   if (compute_d) {
-    vec gradient = zeros<vec>(p_size + b_size);
+    vec gradient = zeros<vec>(l_tot + l_IM_size); // l_IM_size to account for bandwidths
     // calculate last term of gradient : sapply(seq(m.size), function(h) {diag(inv.A) %*% d3.likelihood.m(y.sample, f.m.hat, M, h)})
     vec inv_A_d3_v = zeros<vec>(m_size);
     for (size_t h = 0; h < m_size; h++) {
       inv_A_d3_v(h) = dot(inv_A.diag(), d3_likelihood_m(y, f, M, lambda, m_size, h));
     }
     // calculate gradient entries
-    for (size_t p = 1; p <= p_size + b_size; p++) {
+    for (size_t p = 1; p <= l_tot + l_IM_size; p++) { // l_IM_size to account for bandwidths
       // diagonal for first trace entry
       vec diag_1 = zeros<vec>(m_size);
       for (size_t i = 0; i < m_size; i++) {
