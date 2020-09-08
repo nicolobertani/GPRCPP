@@ -9,14 +9,14 @@ double sq2pi = pow(2 * datum::pi, .5);
 
 // COVARIANCE FUNCTIONS --------------------------------------------------------
 // single entry functions
-double k_se(const vec &x, const vec &y, const double &m) {
+double k_se_m(const vec &x, const vec &y, const double &m) {
   double df = pow(norm(x - y, 2), 2);
   double res = exp(- df / (2 * pow(m, 2)));
   return res;
 }
 
 // matrix functions
-mat K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices) {
+mat K_se_m(const mat &M, const mat &N, const double &m, const bool &equal_matrices) {
   mat K;
 
   if (equal_matrices == 1) {
@@ -26,13 +26,13 @@ mat K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices
     // fill upper triangular wo diag
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = r + 1; c < M.n_rows; c++) {
-        K(r, c) = k_se(M.row(r).t(), M.row(c).t(), m);
+        K(r, c) = k_se_m(M.row(r).t(), M.row(c).t(), m);
       }
     }
     K = K + K.t();
     // fill diag
     for (int i = 0; i < M.n_rows; i++) {
-      K(i,i) = k_se(M.row(i).t(), M.row(i).t(), m);
+      K(i,i) = k_se_m(M.row(i).t(), M.row(i).t(), m);
     }
 
   } else {
@@ -41,7 +41,7 @@ mat K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices
     // fill everything
     for (int r = 0; r < M.n_rows; r++) {
       for (int c = 0; c < N.n_rows; c++) {
-        K(r, c) = k_se(M.row(r).t(), N.row(c).t(), m);
+        K(r, c) = k_se_m(M.row(r).t(), N.row(c).t(), m);
       }
     }
   }
@@ -64,7 +64,7 @@ double d_k_IM_partial(const double &SUK_i, const double &dSUK_i, const double &S
 }
 
 // matrix functions
-mat d_K_se(const mat &M, const mat &N, const double &m, const bool &equal_matrices) {
+mat d_K_se_m(const mat &M, const mat &N, const double &m, const bool &equal_matrices) {
   mat K;
 
   if (equal_matrices == 1) {
@@ -128,16 +128,24 @@ mat d_K_IM_partial(const vec &SUK_vec_x, const vec &dSUK_vec_x, const vec &SUK_v
 
 
 // COMPLETE COVARIANCE MATRIX AND DERIVATIVES ----------------------------------
-cube k_ARD_IM(const mat &X, const mat &Y, const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const mat &dSUK_Y,
-                   const vec &p_vec, const vec &b_vec, const vec &n_vec,
+cube k_ARD_mixed(const mat &X, const mat &Y, const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const mat &dSUK_Y,
+                   const vec &l_IM_vec, const vec &b_vec, const vec &n_vec, const vec &l_other_vec,
                    const bool &equal_mx, const bool &compute_d) {
+  // create size variables
+  int l_IM_size = l_IM_vec.n_elem;
+  int b_size = b_vec.n_elem;
+  int n_size = n_vec.n_elem;
+  int l_other_size = l_other_vec.n_elem;
+  int l_tot = l_IM_size + l_other_size; // amplitude is the last parameter
   // initial checks
+  if (l_IM_size != b_size) Rcout << "Unequal number of lenghscales and bandwidth for IM.\n";
+  if (l_IM_size != n_size) Rcout << "Unequal number of lenghscales and n for IM.\n";
+  if (X.n_cols != (l_IM_size + l_other_size - 1)) Rcout << "Unequal number of matrix columns and parameters.\n";
   if (!equal_mx) {
     if (X.n_cols != Y.n_cols) Rcout << "Unequal number of columns in the matrices.\n";
   }
-  int p = p_vec.n_elem;
-  if (X.n_cols != (p - 1)) Rcout << "Unequal number of matrix columns and parameters.\n";
   // generate variables
+  vec l_vec = join_cols(l_IM_vec, l_other_vec);
   cube K_cube;
   cube d_cube;
   cube b_cube;
@@ -146,64 +154,66 @@ cube k_ARD_IM(const mat &X, const mat &Y, const mat &SUK_X, const mat &dSUK_X, c
   if (equal_mx == 1) {
     K_0.set_size(X.n_rows, X.n_rows);
     K_0.ones();
-    K_cube.set_size(X.n_rows, X.n_rows, p - 1);
+    K_cube.set_size(X.n_rows, X.n_rows, l_tot - 1);
     if (compute_d) {
-      d_cube.set_size(X.n_rows, X.n_rows, p - 1); // p-1 because only needed for characteristic length-scales
-      b_cube.set_size(X.n_rows, X.n_rows, p - 1); // p-1 because 1 bandwidth per characteristic length-scales
-      out.set_size(X.n_rows, X.n_rows, 2 * p); // 1 + p + b = 2p
+      d_cube.set_size(X.n_rows, X.n_rows, l_tot - 1); // l_tot - 1 because only needed for characteristic length-scales (no amplitude)
+      b_cube.set_size(X.n_rows, X.n_rows, b_size); // b_size: one per bandwidth
+      out.set_size(X.n_rows, X.n_rows, 1 + l_tot + b_size); // covariance matrix + derivatives of lenghscales, bandwidths, amplitude
     } else {
-      out.set_size(X.n_rows, X.n_rows, 1); // 1 for covariance plus p for each derivative
+      out.set_size(X.n_rows, X.n_rows, 1); // 1 for covariance only
     }
   } else {
     K_0.set_size(X.n_rows, Y.n_rows);
     K_0.ones();
-    K_cube.set_size(X.n_rows, Y.n_rows, p - 1);
+    K_cube.set_size(X.n_rows, Y.n_rows, l_tot - 1);
     if (compute_d) {
-      d_cube.set_size(X.n_rows, Y.n_rows, p - 1); // p-1 because only needed for characteristic length-scales
-      b_cube.set_size(X.n_rows, Y.n_rows, p - 1); // p-1 because 1 bandwidth per characteristic length-scales
-      out.set_size(X.n_rows, Y.n_rows, 2 * p); // 1 + p + b = 2p
+      d_cube.set_size(X.n_rows, Y.n_rows, l_tot - 1);
+      b_cube.set_size(X.n_rows, Y.n_rows, b_size);
+      out.set_size(X.n_rows, Y.n_rows, 1 + l_tot + b_size);
     } else {
-      out.set_size(X.n_rows, Y.n_rows, 1); // 1 for covariance plus p for each derivative
+      out.set_size(X.n_rows, Y.n_rows, 1);
     }
   }
   // COMPUTE COVARIANCE MATRIX
   // populate list of covariance matrices
-  for (size_t i = 0; i < (p - 1); i++) {
-    K_cube.slice(i) = K_se(X.col(i), Y.col(i), p_vec(i), equal_mx);
+  for (size_t i = 0; i < (l_tot - 1); i++) {
+    K_cube.slice(i) = K_se_m(X.col(i), Y.col(i), l_vec(i), equal_mx);
   }
   // multiply the matrices in the list
-  for (size_t i = 0; i < (p - 1); i++) {
+  for (size_t i = 0; i < (l_tot - 1); i++) {
       K_0 = K_0 % K_cube.slice(i);
   }
-  out.slice(0) = pow(p_vec(p - 1), 2) * K_0;
+  out.slice(0) = pow(l_vec(l_tot - 1), 2) * K_0;
+
   // COMPUTE DERIVATIVE MATRICES
   // compute all individual derivative matrices, first for characteristic length-scales l
   if (compute_d) {
     // COMPUTE DERIVATIVES FOR LENGTH-SCALES
-    for (size_t i = 0; i < p - 1; i++) {
-      d_cube.slice(i) = d_K_se(X.col(i), Y.col(i), p_vec(i), equal_mx);
+    for (size_t i = 0; i < l_tot - 1; i++) {
+      d_cube.slice(i) = d_K_se_m(X.col(i), Y.col(i), l_vec(i), equal_mx);
     }
-    for (size_t i = 0; i < p - 1; i++) {
+    for (size_t i = 0; i < l_tot - 1; i++) {
       mat temp;
       temp.copy_size(K_0);
       temp.ones();
-      for (size_t j = 0; j < p - 1; j++) {
+      for (size_t j = 0; j < l_tot - 1; j++) {
         if (i == j) {
           temp = temp % d_cube.slice(j);
         } else {
           temp = temp % K_cube.slice(j);
         }
       }
-      out.slice(i + 1) = pow(p_vec(p - 1), 2) * temp;
+      out.slice(i + 1) = pow(l_vec(l_tot - 1), 2) * temp;
     }
     // Last entry in the outpust list is for the derivative of the amplitude s
-    out.slice(p) = 2 * p_vec(p - 1) * K_0;
+    out.slice(l_tot) = 2 * l_vec(l_tot - 1) * K_0;
+
     // COMPUTE DERIVATIVES FOR BANDWIDTHS
-    for (size_t i = 0; i < p - 1; i++) {
-      b_cube.slice(i) = d_K_IM_partial(SUK_X.col(i), dSUK_X.col(i), SUK_Y.col(i), dSUK_Y.col(i), p_vec(i), b_vec(i), n_vec(i), equal_mx);
+    for (size_t i = 0; i < b_size; i++) {
+      b_cube.slice(i) = d_K_IM_partial(SUK_X.col(i), dSUK_X.col(i), SUK_Y.col(i), dSUK_Y.col(i), l_IM_vec(i), b_vec(i), n_vec(i), equal_mx);
     }
-    for (size_t i = 0; i < p - 1; i++) {
-      out.slice(p + 1 + i) = pow(p_vec(p - 1), 2) * K_0 % b_cube.slice(i);
+    for (size_t i = 0; i < b_size; i++) {
+      out.slice(p + 1 + i) = out.slice(0) % b_cube.slice(i);
     }
   }
   return out;
@@ -266,7 +276,7 @@ List d_logZ_m_IM (const vec &p_vec, const vec &b_vec, const vec &n_vec, const ve
   List out(2);
   double logZ;
   // mm part
-  cube all_K_mm = k_ARD_IM(X, X, SUK_X, dSUK_X, SUK_X, dSUK_X, p_vec, b_vec, n_vec, 1, compute_d); // covariance and derivatives for mm
+  cube all_K_mm = k_ARD_mixed(X, X, SUK_X, dSUK_X, SUK_X, dSUK_X, p_vec, b_vec, n_vec, 1, compute_d); // covariance and derivatives for mm
   sp_mat jitter_mx = zeros<sp_mat>(m_size, m_size);
   jitter_mx.diag().fill(jitter);
   mat K_mm = all_K_mm.slice(0) + jitter_mx;
@@ -274,7 +284,7 @@ List d_logZ_m_IM (const vec &p_vec, const vec &b_vec, const vec &n_vec, const ve
   mat inv_chol_K_mm = inv(trimatu(chol_K_mm));
   mat inv_K_mm = inv_chol_K_mm * inv_chol_K_mm.t();
   // nm part
-  cube all_K_nm = k_ARD_IM(Y, X, SUK_Y, dSUK_Y, SUK_X, dSUK_X, p_vec, b_vec, n_vec, 0, compute_d); // covariance and derivatives for nm
+  cube all_K_nm = k_ARD_mixed(Y, X, SUK_Y, dSUK_Y, SUK_X, dSUK_X, p_vec, b_vec, n_vec, 0, compute_d); // covariance and derivatives for nm
   mat K_nm = all_K_nm.slice(0);
   // other matrices and input
   mat M = K_nm * inv_K_mm;
