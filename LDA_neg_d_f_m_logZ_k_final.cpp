@@ -193,7 +193,7 @@ vec d_likelihood_m (const vec &y, const vec &f, const mat &M, const vec &lambda,
 
 
 // [[Rcpp::export]]
-List neg_d_f_m_logZ_m (
+List neg_d_f_m_logZ_m_final (
   const vec &y, const vec &f,
   const mat &X_time, const mat &Y_time, const vec &par_time, const int &period,
   const mat &X_geo, const mat &Y_geo, const vec &par_geo,
@@ -218,7 +218,7 @@ List neg_d_f_m_logZ_m (
     Y_time, X_time, par_time, period,
     Y_geo, X_geo, par_geo,
     Y, X, l_IM_vec, l_other_vec,
-    0)
+    0);
   // other matrices and input
   mat M = K_nm * inv_K_mm;
   vec lambda = exp(M * f);
