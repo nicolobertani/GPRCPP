@@ -350,8 +350,8 @@ mat d_K_IM_partial(const vec &SUK_vec_x, const vec &dSUK_vec_x, const vec &SUK_v
 
 // COMPLETE COVARIANCE MATRIX AND DERIVATIVES ----------------------------------
 cube K_full(
-  const mat &X_time, const mat &Y_time, const double &par_time, const int &period,
-  const mat &X_geo, const mat &Y_geo, const double &par_geo,
+  const mat &X_time, const mat &Y_time, const vec &par_time, const int &period,
+  const mat &X_geo, const mat &Y_geo, const vec &par_geo,
   const mat &X, const mat &Y, const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const mat &dSUK_Y,
                    const vec &l_IM_vec, const vec &b_vec, const vec &n_vec, const vec &l_other_vec,
                    const bool &equal_mx, const bool &compute_d) {
@@ -421,17 +421,17 @@ cube K_full(
       K_ARD_0 = K_ARD_0 % K_ARD_cube.slice(i);
   }
   // full covariance matrix
-  out.slice(0) = K_per(X_time, Y_time, par_time(1), par_time(2), period, equal_mx) +
-                 K_se(X_geo, Y_geo, par_geo(1), par_geo(2), equal_mx) +
+  out.slice(0) = K_per(X_time, Y_time, par_time(0), par_time(1), period, equal_mx) +
+                 K_se(X_geo, Y_geo, par_geo(0), par_geo(1), equal_mx) +
                  pow(l_vec(l_tot - 1), 2) * K_ARD_0;
 
   // COMPUTE DERIVATIVE MATRICES
   // compute all individual derivative matrices, first for characteristic length-scales l
   if (compute_d) {
-    out.slice(1) = d_K_per_l(X_time, Y_time, par_time(1), par_time(2), period, equal_mx);
-    out.slice(2) = d_K_per_s(X_time, Y_time, par_time(1), par_time(2), period, equal_mx);
-    out.slice(3) = d_K_se_l(X_geo, Y_geo, par_geo(1), par_geo(2), equal_mx);
-    out.slice(4) = d_K_se_s(X_geo, Y_geo, par_geo(1), par_geo(2), equal_mx);
+    out.slice(1) = d_K_per_l(X_time, Y_time, par_time(0), par_time(1), period, equal_mx);
+    out.slice(2) = d_K_per_s(X_time, Y_time, par_time(0), par_time(1), period, equal_mx);
+    out.slice(3) = d_K_se_l(X_geo, Y_geo, par_geo(0), par_geo(1), equal_mx);
+    out.slice(4) = d_K_se_s(X_geo, Y_geo, par_geo(0), par_geo(1), equal_mx);
     // COMPUTE DERIVATIVES FOR LENGTH-SCALES OF ARD
     for (size_t i = 0; i < l_tot - 1; i++) {
       d_cube.slice(i) = d_K_se_m(X.col(i), Y.col(i), l_vec(i), equal_mx);
@@ -457,7 +457,7 @@ cube K_full(
       b_cube.slice(i) = d_K_IM_partial(SUK_X.col(i), dSUK_X.col(i), SUK_Y.col(i), dSUK_Y.col(i), l_IM_vec(i), b_vec(i), n_vec(i), equal_mx);
     }
     for (size_t i = 0; i < b_size; i++) {
-      out.slice(5 + l_tot + i) = out.slice(0) % b_cube.slice(i);
+      out.slice(5 + l_tot + i) = pow(l_vec(l_tot - 1), 2) * K_ARD_0 % b_cube.slice(i);
     }
   }
   return out;
