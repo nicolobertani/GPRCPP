@@ -353,8 +353,9 @@ cube K_full(
   const mat &X_time, const mat &Y_time, const vec &par_time, const int &period,
   const mat &X_geo, const mat &Y_geo, const vec &par_geo,
   const mat &X, const mat &Y, const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const mat &dSUK_Y,
-                   const vec &l_IM_vec, const vec &b_vec, const vec &n_vec, const vec &l_other_vec,
-                   const bool &equal_mx, const bool &compute_d) {
+  const vec &l_IM_vec, const vec &b_vec, const vec &n_vec, const vec &l_other_vec,
+  const bool &equal_mx, const bool &compute_d
+) {
   // create size variables
   int l_IM_size = l_IM_vec.n_elem;
   int b_size = b_vec.n_elem;
@@ -510,21 +511,25 @@ vec d_f_m (const vec &f, const vec &y,
 
 
 // [[Rcpp::export]]
-List d_logZ_m_mixed (
-  const vec &l_IM_vec, const vec &b_vec, const vec &n_vec, const vec &l_other_vec,
+List d_logZ_m_final (
   const vec &y, const vec &f,
-  const mat &X, const mat &SUK_X, const mat &dSUK_X, const mat &Y, const mat &SUK_Y, const mat &dSUK_Y,
+  const mat &X_time, const mat &Y_time, const vec &par_time, const int &period,
+  const mat &X_geo, const mat &Y_geo, const vec &par_geo,
+  const mat &X, const mat &Y, const mat &SUK_X, const mat &dSUK_X, const mat &SUK_Y, const mat &dSUK_Y,
+  const vec &l_IM_vec, const vec &b_vec, const vec &n_vec, const vec &l_other_vec,
   const double &jitter, const bool &compute_d) {
   // create size variables
   int m_size = f.n_elem;
-  int l_IM_size = l_IM_vec.n_elem;
-  int l_other_size = l_other_vec.n_elem;
-  int l_tot = l_IM_size + l_other_size; // amplitude is the last parameter
   // initialize values
   List out(2);
   double logZ;
   // mm part
-  cube all_K_mm = K_full(X, X, SUK_X, dSUK_X, SUK_X, dSUK_X, l_IM_vec, b_vec, n_vec, l_other_vec, 1, compute_d); // covariance and derivatives for mm
+  cube all_K_mm = K_full(
+    X_time, X_time, par_time, period,
+    X_geo, X_geo, par_geo,
+    X, X, SUK_X, dSUK_X, SUK_X, dSUK_X,
+    l_IM_vec, b_vec, n_vec, l_other_vec,
+    1, compute_d); // covariance and derivatives for mm
   sp_mat jitter_mx = zeros<sp_mat>(m_size, m_size);
   jitter_mx.diag().fill(jitter);
   mat K_mm = all_K_mm.slice(0) + jitter_mx;
@@ -532,7 +537,12 @@ List d_logZ_m_mixed (
   mat inv_chol_K_mm = inv(trimatu(chol_K_mm));
   mat inv_K_mm = inv_chol_K_mm * inv_chol_K_mm.t();
   // nm part
-  cube all_K_nm = K_full(Y, X, SUK_Y, dSUK_Y, SUK_X, dSUK_X, l_IM_vec, b_vec, n_vec, l_other_vec, 0, compute_d); // covariance and derivatives for nm
+  cube all_K_nm = K_full(
+    Y_time, X_time, par_time, period,
+    Y_geo, X_geo, par_geo,
+    Y, X, SUK_Y, dSUK_Y, SUK_X, dSUK_X,
+    l_IM_vec, b_vec, n_vec, l_other_vec,
+    0, compute_d); // covariance and derivatives for nm
   mat K_nm = all_K_nm.slice(0);
   // other matrices and input
   mat M = K_nm * inv_K_mm;
@@ -548,14 +558,15 @@ List d_logZ_m_mixed (
   out(0) = logZ;
   // GRADIENT OF LOG-LIKELIHOOD
   if (compute_d) {
-    vec gradient = zeros<vec>(l_tot + l_IM_size); // l_IM_size to account for bandwidths
+    int n_derivatives = all_K_mm.n_slices - 1;
+    vec gradient = zeros<vec>(n_derivatives); // l_IM_size to account for bandwidths
     // calculate last term of gradient : sapply(seq(m.size), function(h) {diag(inv.A) %*% d3.likelihood.m(y.sample, f.m.hat, M, h)})
     vec inv_A_d3_v = zeros<vec>(m_size);
     for (size_t h = 0; h < m_size; h++) {
       inv_A_d3_v(h) = dot(inv_A.diag(), d3_likelihood_m(y, f, M, lambda, m_size, h));
     }
     // calculate gradient entries
-    for (size_t p = 1; p <= l_tot + l_IM_size; p++) { // l_IM_size to account for bandwidths
+    for (size_t p = 1; p <= n_derivatives; p++) { // l_IM_size to account for bandwidths
       // diagonal for first trace entry
       vec diag_1 = zeros<vec>(m_size);
       for (size_t i = 0; i < m_size; i++) {
