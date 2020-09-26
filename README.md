@@ -10,15 +10,15 @@ More complex combinations of these simple kernels can be structured in R directl
 
 For an introduction to these kernels, see:
 
-*David Duvenaud, James Lloyd, Roger Grosse, Joshua Tenenbaum, Ghahramani Zoubin*
-**Structure Discovery in Nonparametric Regression through Compositional Kernel Search**
-Proceedings of the 30th International Conference on Machine Learning, PMLR 28(3):1166-1174, 2013
+*David Duvenaud, James Lloyd, Roger Grosse, Joshua Tenenbaum, Ghahramani Zoubin*,
+**Structure Discovery in Nonparametric Regression through Compositional Kernel Search**,
+Proceedings of the 30th International Conference on Machine Learning, PMLR 28(3):1166-1174, 2013.
 
 For an exhaustive coverage of the topic of Gaussian Processes, the reference is:
 
-*Rasmussen and Williams*
-**Gaussian Processes for Machine Learning**
-Volume 2, MIT press Cambridge, MA, 2006
+*Rasmussen and Williams*,
+**Gaussian Processes for Machine Learning**,
+Volume 2, MIT press Cambridge, MA, 2006.
 
 This is freely available [here](http://www.gaussianprocess.org/gpml/).
 
